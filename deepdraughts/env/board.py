@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:36:26
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-12 20:41:28
+LastEditTime: 2021-09-13 00:36:51
 Description: 
 '''
 
@@ -14,10 +14,10 @@ class Board():
         self.pieces = dict() # key - value: pos - piece
         self.ngrid = ngrid
         self.rule = rule
-        self.available_moves = dict()
-        self.jump_moves = []
-        self.normal_moves = []
-        self.set_board(*self.get_default_pos())
+        self.piece_moves = dict()
+        self.all_king_jumps = []
+        self.all_jump_moves = []
+        self.all_normal_moves = []
 
         import math
         n = int(math.sqrt(ngrid))
@@ -31,7 +31,7 @@ class Board():
     '''    
 
     def get_king_promotion_pos(self):
-        return globals()["KING_POS_WHITE_" + str(self.ngrid)], globals()["KING_POS_WHITE_" + str(self.ngrid)]
+        return globals()["KING_POS_WHITE_" + str(self.ngrid)], globals()["KING_POS_BLACK_" + str(self.ngrid)]
 
 
     def get_default_pos(self):
@@ -47,9 +47,10 @@ class Board():
     Update board
     '''    
     def reset_available_moves(self):
-        self.available_moves.clear()
-        self.jump_moves.clear()
-        self.normal_moves.clear()
+        self.piece_moves.clear()
+        self.all_king_jumps.clear()
+        self.all_jump_moves.clear()
+        self.all_normal_moves.clear()
 
     def set_board(self, whites_pos, blacks_pos, whites_isking = None, blacks_isking = None):
         whites_pos = norm_pos_list(whites_pos)
@@ -67,6 +68,13 @@ class Board():
             self.pieces[pos] = Piece(BLACK, pos, isking, *self.get_king_promotion_pos())
         self.reset_available_moves()
 
+    def init_empty_board(self):
+        self.pieces.clear()
+        self.reset_available_moves()
+
+    def init_default_board(self):
+        self.set_board(*self.get_default_pos())
+
     def check_pos_list(self, pos_list):
         is_ok = True
         for pos in pos_list:
@@ -76,24 +84,30 @@ class Board():
                 is_ok = False
         return is_ok
 
-    def move(self, pos_from, pos_to, take_piece = False, force = False):
+    
+    def move(self, move):
+        self._move(move.moves[-2], move.moves[-1], move.taken_pos)
+
+    def _move(self, pos_from, pos_to, taken_pos = None):
         '''
         Move the piece in pos_from to pos_to.
         '''
         if pos_from not in self.pieces or pos_to in self.pieces:
-            return None # action is not available
+            raise Exception("Invalid move operation. From", pos_from, "to", pos_to)
         piece = self.pieces.pop(pos_from)
         piece.move_to(pos_to)
         self.pieces[pos_to] = piece
-        if take_piece:
-            self.pieces.pop((pos_from + pos_to) / 2)
+        if taken_pos is not None:
+            self.pieces.pop(taken_pos)
         self.reset_available_moves()
-        return Move(pos_from, pos_to, force)
 
 
     '''
     Querying states
     '''    
+    def number_of_pieces(self):
+        return len(self.pieces)
+
     def get_pieces(self):
         return [x for x in self.pieces.values()]
 
@@ -136,11 +150,10 @@ class Board():
         return pos >= 1 and pos <= self.ngrid
 
     def get_available_moves(self, pos):
-        # TODO Brazilian rule 有多吃多
-
-        if pos in self.available_moves:
-            return self.available_moves[pos]
+        if pos in self.piece_moves:
+            return self.piece_moves[pos]
         
+        king_jump_moves = []
         jump_moves = []
         normal_moves = []
 
@@ -162,7 +175,7 @@ class Board():
                 
                 # 如果周围有子，其后方没有子，且异色
                 if next_pos in self.pieces and jump_pos not in self.pieces and self.pieces[next_pos].player != piece.player:
-                    jump_moves.append(jump_pos)
+                    jump_moves.append(Move(pos, jump_pos, MEN_MOVE, True, next_pos))
             
             # normal moves
             if len(jump_moves) == 0:
@@ -176,7 +189,7 @@ class Board():
                         continue
                     
                     if next_pos not in self.pieces:
-                        normal_moves.append(next_pos)
+                        normal_moves.append(Move(pos, next_pos, MEN_MOVE))
 
         # king moves
         else:
@@ -208,19 +221,19 @@ class Board():
                     # find a place where can jump to
                     else:
                         if meet_diff_color is not None:
-                            tmp_jump.append(next_pos)
+                            tmp_jump.append(Move(pos, next_pos, KING_MOVE, True, meet_diff_color))
                         else:
-                            tmp_normal.append(next_pos)
+                            tmp_normal.append(Move(pos, next_pos, KING_MOVE))
                 
                 # deal each direction
                 if len(tmp_jump) >= 1:
-                    jump_moves.extend(tmp_jump)
+                    king_jump_moves.extend(tmp_jump)
                 else:
                     normal_moves.extend(tmp_normal)
 
 
-        self.available_moves[pos] = (jump_moves, normal_moves)
-        return jump_moves, normal_moves
+        self.piece_moves[pos] = (king_jump_moves, jump_moves, normal_moves)
+        return king_jump_moves, jump_moves, normal_moves
 
 
     def get_all_available_moves(self, current_player):
@@ -231,36 +244,66 @@ class Board():
             take_piece: Bool
             next_moves: List
         '''
-        if len(self.jump_moves) + len(self.normal_moves):
-            return self.jump_moves, self.normal_moves
+        if len(self.all_king_jumps) + len(self.all_jump_moves) + len(self.all_normal_moves) >= 1:
+            return self.all_king_jumps, self.all_jump_moves, self.all_normal_moves
 
-        all_jump = []
-        all_normal = []
+        all_king_jumps = []
+        all_jump_moves = []
+        all_normal_moves = []
         for pos in self.pieces:
             if self.pieces[pos].player != current_player:
                 continue
-            jump_moves, normal_moves = self.get_available_moves(pos)
-            all_jump.extend(jump_moves)
-            all_normal.extend(normal_moves)
+            king_jump_moves, jump_moves, normal_moves = self.get_available_moves(pos)
+            all_king_jumps.extend(king_jump_moves)
+            all_jump_moves.extend(jump_moves)
+            all_normal_moves.extend(normal_moves)
 
-        self.jump_moves = list(set(all_jump))
-        self.normal_moves = list(set(all_normal))
-        return self.jump_moves, self.normal_moves
+        self.all_king_jumps = all_king_jumps
+        self.all_jump_moves = all_jump_moves
+        self.all_normal_moves = all_normal_moves
+        return all_king_jumps, all_jump_moves, all_normal_moves
         
 class Move():
-    def __init__(self, pos_from, pos_to, force = False) -> None:
-        self.move_list = [pos_from, pos_to]
+    @classmethod
+    def init_by_str(cls, str_move):
+        take_piece = False
+        taken_pos = None
+        force = False
+        sep = None
+        if "->" in str_move:
+            sep = "->"
+            force = True
+        elif "-" in str_move:
+            sep = "-"
+        elif "x" in str_move:
+            sep = "x"
+            take_piece = True
+        else:
+            raise Exception("Invalid file format.")
+        pos_from, pos_to = (int(x) for x in str_move.split(sep))
+        
+        return Move(pos_from, pos_to, take_piece, taken_pos, force)
+
+    def __init__(self, pos_from, pos_to, move_type = MEN_MOVE, take_piece = False, taken_pos = None, force = False) -> None:
+        self.moves = [pos_from, pos_to]
         self.force = force
+        self.take_piece = take_piece
+        self.taken_pos = taken_pos
+        self.move_type = move_type
     
     def __str__(self) -> str:
-        if not self.force:
-            return "-".join([str(x) for x in self.move_list])
-        else:
-            return "->".join([str(x) for x in self.move_list])
+        if self.force:
+            return "->".join([str(x) for x in self.moves])
+        if self.take_piece:
+            return "x".join([str(x) for x in self.moves])
+        return "-".join([str(x) for x in self.moves])
+
+    # def __hash__(self):
+        
 
     def merge(self, merging_move):
-        if len(merging_move.move_list) != 2:
+        if len(merging_move.moves) != 2:
             raise Exception("Length of merging move is not 2")
-        if self.move_list[-1] != merging_move.move_list[0]:
+        if self.moves[-1] != merging_move.moves[0]:
             raise Exception("Merging move does not match.")
-        self.move_list.append(merging_move[1])
+        self.moves.append(merging_move[1])

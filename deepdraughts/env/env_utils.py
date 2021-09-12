@@ -2,22 +2,34 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:31:25
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-12 19:54:07
+LastEditTime: 2021-09-13 00:39:37
 Description: 
 '''
 
+# For training AI
+WHITE = 1
+BLACK = -1
+
+# State code
+GAME_CONTINUE = 0
+GAME_OVER = 1
+GAME_DRAW = 2
+
+RUSSIAN_RULE = 3
+BRAZILIAN_RULE = 4
+
+MEN_MOVE = 5
+KING_MOVE = 6
+
+# Const value
 N_GRID_64 = 64
 N_GRID_100 = 100
 N_SIZE_8 = 8
 
-RUSSIAN_RULE = 0
-BRAZILIAN_RULE = 1
 
-WHITE = 1
-BLACK = -1
-
+# Var Tables
 KING_POS_WHITE_64 = set([2, 4, 6, 8])
-KING_POS_BLACK_64 = set([])
+KING_POS_BLACK_64 = set([57, 59, 61, 63])
 
 KING_POS_WHITE_100 = set([])
 KING_POS_BLACK_100 = set([])
@@ -66,6 +78,7 @@ def norm_pos(pos):
     if isinstance(pos, str): # 64 format like C3 and D4
         return POS_MAP_64[pos.lower()]
     if isinstance(pos, (list, tuple)): # (x, y) format, started from 1
+        # TODO
         # return POS_MAP_64[chr(ASCII_LOWER_A+pos[0]-1)+str(pos[1])] 
         return 
     
@@ -95,6 +108,9 @@ def coord2pos(row, col, nsize, origin = "left_lower"):
         idx = (nsize-1-row) * nsize + col 
     return idx + 1
 
+def coord2fstr():
+    # TODO
+    pass
 
 if __name__ == "__main__":
     a = "0"

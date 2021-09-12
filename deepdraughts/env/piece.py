@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:17:31
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-12 19:29:17
+LastEditTime: 2021-09-13 00:20:11
 Description: 
 '''
 
@@ -26,7 +26,7 @@ class Piece():
         if not self.isking:
             if self.player == WHITE and pos in self.KING_POS_WHITE:
                 self.king_promote()
-            elif self.player == BLACK and pos in self.KING_POS_BLACK:
+            if self.player == BLACK and pos in self.KING_POS_BLACK:
                 self.king_promote()
 
 

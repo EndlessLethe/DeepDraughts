@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 15:56:20
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-12 19:28:44
+LastEditTime: 2021-09-13 00:01:03
 Description: 
 '''
 
@@ -97,8 +97,7 @@ while running:
     pos_list = [x.pos for x in pieces]
     player_list = [x.player for x in pieces]
     isking_list = [x.isking for x in pieces]
-    jump_moves, normal_moves = game.current_board.get_all_available_moves(game.current_player)
-    available_moves = jump_moves if len(jump_moves) >= 1 else normal_moves
+    available_moves = game.get_all_available_moves()
     for event in pg.event.get():
         if event.type == pg.QUIT:
             running = False
@@ -113,11 +112,13 @@ while running:
                 print(mouse_y, mouse_x, row, col, pos)
 
                 # if move piece
-                if pos in next_moves:
-                    game.move(selected_pos, pos, take_piece = take_piece)
-                    # reset last action
-                    reset_drawing()
-                    continue
+                for move in next_moves:
+                    if pos == move.moves[-1]:
+                        game.move(move)
+                        print(str(game))
+                        # reset last action
+                        reset_drawing()
+                        continue
 
                 # reset last action
                 reset_drawing()
@@ -128,19 +129,11 @@ while running:
                         continue
 
                     # show available moves.
-                    jump_moves, normal_moves = game.current_board.get_available_moves(pos)
-                    if len(jump_moves) + len(normal_moves) >= 1:
+                    for move in available_moves:
+                        if pos == move.moves[-2]:
+                            next_moves.append(move)
+                    if len(next_moves) >= 1:
                         selected_pos = pos
-
-                    if len(jump_moves) >= 1:
-                        take_piece = True
-                        for nextpos in jump_moves:
-                            next_moves.append(nextpos)
-                    else:
-                        for nextpos in normal_moves:
-                            next_moves.append(nextpos)
-                    print(jump_moves)
-                    print(normal_moves)
 
             elif event.button == 3: # right click of mouse
                 # reset last action
@@ -149,13 +142,15 @@ while running:
     draw_background()
     draw_pieces(pos_list, player_list, isking_list, game.current_board.nsize)
     if selected_pos is not None and next_moves:
-        for pos in next_moves:
+        for move in next_moves:
+            pos = move.moves[-1]
             draw_select(pos, game.current_board.nsize)
     else:
-        for pos in available_moves:
+        for move in available_moves:
+            pos = move.moves[-1]
             draw_select(pos, game.current_board.nsize)
     screen.blit(surface, (0, 0))
     pg.display.flip()
-    clock.tick(50)
+    clock.tick(500)
 
 pg.quit()
