@@ -2,12 +2,16 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:31:25
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-11 21:12:12
+LastEditTime: 2021-09-12 19:54:07
 Description: 
 '''
 
 N_GRID_64 = 64
 N_GRID_100 = 100
+N_SIZE_8 = 8
+
+RUSSIAN_RULE = 0
+BRAZILIAN_RULE = 1
 
 WHITE = 1
 BLACK = -1
@@ -28,6 +32,9 @@ VALID_POS_64 = set([2, 4, 6, 8, 9, 11, 13, 15, 18, 20, 22, 24,
                     25, 27, 29, 31, 34, 36, 38, 40,
                     41, 43, 45, 47, 50, 52, 54, 56, 57, 59, 61, 63])
 VALID_POS_100 = set([])
+
+EDGE_POS_64 = set([9, 25, 41, 57, 8, 24, 40, 56])
+EDGE_POS_100 = set([])
 
 POS_MAP_64 = {
     

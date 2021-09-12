@@ -2,13 +2,13 @@
 Author: Zeng Siwei
 Date: 2021-09-11 15:56:20
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-12 00:17:54
+LastEditTime: 2021-09-12 19:28:44
 Description: 
 '''
 
 import pygame as pg
-from game import Game
-from utils import *
+from env.game import Game
+from env.env_utils import *
 
 def draw_background():
     color_idx = 0
@@ -83,12 +83,22 @@ selected_pos = None
 take_piece = False
 next_moves = []
 
+def reset_drawing():
+    global selected_pos
+    global take_piece
+    global next_moves
+    selected_pos = None
+    take_piece = False
+    next_moves = []
+
 running = True
 while running:
     pieces = game.current_board.get_pieces()
     pos_list = [x.pos for x in pieces]
     player_list = [x.player for x in pieces]
     isking_list = [x.isking for x in pieces]
+    jump_moves, normal_moves = game.current_board.get_all_available_moves(game.current_player)
+    available_moves = jump_moves if len(jump_moves) >= 1 else normal_moves
     for event in pg.event.get():
         if event.type == pg.QUIT:
             running = False
@@ -105,19 +115,23 @@ while running:
                 # if move piece
                 if pos in next_moves:
                     game.move(selected_pos, pos, take_piece = take_piece)
+                    # reset last action
+                    reset_drawing()
                     continue
 
                 # reset last action
-                selected_pos = None
-                take_piece = False
-                next_moves = []
+                reset_drawing()
 
                 # select piece
                 if pos in pos_list:
-                    selected_pos = pos
+                    if game.current_board.pieces[pos].player != game.current_player:
+                        continue
 
                     # show available moves.
                     jump_moves, normal_moves = game.current_board.get_available_moves(pos)
+                    if len(jump_moves) + len(normal_moves) >= 1:
+                        selected_pos = pos
+
                     if len(jump_moves) >= 1:
                         take_piece = True
                         for nextpos in jump_moves:
@@ -130,16 +144,16 @@ while running:
 
             elif event.button == 3: # right click of mouse
                 # reset last action
-                selected_pos = None
-                take_piece = False
-                next_moves = []
+                reset_drawing()
     
     draw_background()
     draw_pieces(pos_list, player_list, isking_list, game.current_board.nsize)
-    if next_moves:
+    if selected_pos is not None and next_moves:
         for pos in next_moves:
             draw_select(pos, game.current_board.nsize)
-    # draw_move(possible_moves)
+    else:
+        for pos in available_moves:
+            draw_select(pos, game.current_board.nsize)
     screen.blit(surface, (0, 0))
     pg.display.flip()
     clock.tick(50)

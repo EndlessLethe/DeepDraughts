@@ -2,11 +2,11 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:17:31
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-11 19:24:31
+LastEditTime: 2021-09-12 19:29:17
 Description: 
 '''
 
-from utils import *
+from .env_utils import *
 
 class Piece():
     def __init__(self, player, pos, isking, KING_POS_WHITE, KING_POS_BLACK) -> None:
