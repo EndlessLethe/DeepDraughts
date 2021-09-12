@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:36:26
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-12 19:57:09
+LastEditTime: 2021-09-12 20:41:28
 Description: 
 '''
 
@@ -36,6 +36,12 @@ class Board():
 
     def get_default_pos(self):
         return globals()["DEFAULT_POS_WHITE_" + str(self.ngrid)], globals()["DEFAULT_POS_BLACK_" + str(self.ngrid)]
+
+    def get_edge_pos(self):
+        return globals()["EDGE_POS_" + str(self.ngrid)]
+
+    def get_valid_pos(self):
+        return globals()["VALID_POS_" + str(self.ngrid)]
 
     '''
     Update board
@@ -92,11 +98,37 @@ class Board():
         return [x for x in self.pieces.values()]
 
     def get_khop_pos(self, pos, k):
+        '''
+        It's sure that all pos in dict_pos is valid.
+
+        Args: 
+		
+        Returns: 
+		
+        '''        
         dict_pos = dict()
-        for i in range(k):
-            dict_pos[i] = dict()
-            for key, args in HOP_POS_ARGS.items():
-                dict_pos[i][key] = pos + (i+1)*args[0]*self.nsize + (i+1)*args[1]
+        EDGE_POS = self.get_edge_pos()
+        VALID_POS = self.get_valid_pos()
+        
+        for key, args in HOP_POS_ARGS.items():
+            dict_pos[key] = dict()
+            is_invalid = False
+            for i in range(k):
+                if is_invalid:
+                    dict_pos[key][i] = None
+                    continue
+
+                # make sure in boundary
+                next_pos = pos + (i+1)*args[0]*self.nsize + (i+1)*args[1]
+                if not self.in_boundary(next_pos) or next_pos not in VALID_POS:
+                    is_invalid = True
+                    next_pos = None
+                dict_pos[key][i] = next_pos
+
+                # edge pos (col 1 or 8)
+                if next_pos in EDGE_POS:
+                    is_invalid = True
+                # print("for pos", pos, key, i, "next", next_pos, is_invalid)
         return dict_pos
 
 
@@ -104,7 +136,6 @@ class Board():
         return pos >= 1 and pos <= self.ngrid
 
     def get_available_moves(self, pos):
-        # TODO king
         # TODO Brazilian rule 有多吃多
 
         if pos in self.available_moves:
@@ -122,24 +153,22 @@ class Board():
 
             # jump moves
             for key in HOP_POS_ARGS:
-                next_pos = dict_pos[0][key]
-                jump_pos = dict_pos[1][key]
-                if (self.in_boundary(next_pos) and self.in_boundary(jump_pos)) == False:
+                next_pos = dict_pos[key][0]
+                jump_pos = dict_pos[key][1]
+
+                # make sure move is valid
+                if next_pos is None or jump_pos is None:
                     continue
                 
                 # 如果周围有子，其后方没有子，且异色
                 if next_pos in self.pieces and jump_pos not in self.pieces and self.pieces[next_pos].player != piece.player:
-                        # 不能跳出棋盘范围外
-                        if key.startswith("left") and col >= 3:
-                            jump_moves.append(jump_pos)
-                        if key.startswith("right") and col <= 6:
-                            jump_moves.append(jump_pos)
+                    jump_moves.append(jump_pos)
             
             # normal moves
             if len(jump_moves) == 0:
                 for key in HOP_POS_ARGS:
-                    next_pos = dict_pos[0][key]
-                    if self.in_boundary(next_pos) == False:
+                    next_pos = dict_pos[key][0]
+                    if next_pos is None:
                         continue
                     if piece.player == WHITE and next_pos > pos: # 不能往回走
                         continue
@@ -147,16 +176,12 @@ class Board():
                         continue
                     
                     if next_pos not in self.pieces:
-                        if key.startswith("left") and col >= 2:
-                            normal_moves.append(next_pos)
-                        if key.startswith("right") and col <= 7:
-                            normal_moves.append(next_pos)
+                        normal_moves.append(next_pos)
 
         # king moves
         else:
-            dict_pos = self.get_khop_pos(pos, N_SIZE_8)
+            dict_pos = self.get_khop_pos(pos, self.nsize)
             
-            # jump moves
             for key in HOP_POS_ARGS:
                 # for each direction, check:
                 # 1. same color, if true, break
@@ -164,10 +189,35 @@ class Board():
                 # 3. any space behind this diff piece, go futher util meet any piece.
                 tmp_normal = []
                 tmp_jump = []
-                meet_diff_color = False
-                for i in range(N_SIZE_8):
-                    next_pos = dict_pos[i][key]
-                    next_piece = self.pieces[next_pos]
+                meet_diff_color = None # meet pos id
+                for i in range(self.nsize):
+                    next_pos = dict_pos[key][i]
+                    if next_pos is None:
+                        break
+                    # meet piece and check color
+                    if next_pos in self.pieces:
+                        # same color
+                        if self.pieces[next_pos].player == piece.player:
+                            break
+                        # diff color
+                        else:
+                            if meet_diff_color is not None:
+                                break
+                            else:
+                                meet_diff_color = next_pos
+                    # find a place where can jump to
+                    else:
+                        if meet_diff_color is not None:
+                            tmp_jump.append(next_pos)
+                        else:
+                            tmp_normal.append(next_pos)
+                
+                # deal each direction
+                if len(tmp_jump) >= 1:
+                    jump_moves.extend(tmp_jump)
+                else:
+                    normal_moves.extend(tmp_normal)
+
 
         self.available_moves[pos] = (jump_moves, normal_moves)
         return jump_moves, normal_moves
