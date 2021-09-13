@@ -2,15 +2,15 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:31:25
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-13 00:39:37
+LastEditTime: 2021-09-13 11:37:31
 Description: 
 '''
 
-# For training AI
+# For training AI, use 1 and -1
 WHITE = 1
 BLACK = -1
 
-# State code
+# Game State code
 GAME_CONTINUE = 0
 GAME_OVER = 1
 GAME_DRAW = 2
@@ -20,6 +20,20 @@ BRAZILIAN_RULE = 4
 
 MEN_MOVE = 5
 KING_MOVE = 6
+
+# GUI State code
+GUI_EXIT = 7
+GUI_WAIT = 8
+GUI_LEFTCLICK = 9
+GUI_RIGHTCLICK = 10
+
+# Player State code
+HUMAN_PLAYER = 11
+AI_PLAYER = 12
+PURE_MCTS_PLAYER = 13
+ALPHAZERO_PLAYER = 14
+DRL_PLAYER = 15
+
 
 # Const value
 N_GRID_64 = 64

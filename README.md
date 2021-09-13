@@ -2,7 +2,7 @@
  * @Author: Zeng Siwei
  * @Date: 2021-09-12 00:27:58
  * @LastEditors: Zeng Siwei
- * @LastEditTime: 2021-09-12 22:31:00
+ * @LastEditTime: 2021-09-13 01:27:19
  * @Description: 
 -->
 # DeepDraughts
@@ -17,7 +17,7 @@ python gui.py
 
 
 ## Supported Rule
-Draughts in 8x8 board has mainly two rule: Russian and [Brazilian Rule](https://draughts.github.io/brazilian-checkers.html). Because Russian Rule is used more in international competitions, our project only completes Russian Rule for now.
+Draughts in 8x8 board has mainly two rule: [Russian](https://lidraughts.org/variant/russian) and [Brazilian Rule](https://draughts.github.io/brazilian-checkers.html). Because Russian Rule is used more in international competitions, our project only completes Russian Rule for now.
 
 ```
 game = Game(rule = RUSSIAN_RULE)
