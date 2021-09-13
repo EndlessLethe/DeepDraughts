@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 16:20:41
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-13 00:43:31
+LastEditTime: 2021-09-13 23:28:04
 Description: 
 '''
 
@@ -25,8 +25,8 @@ class Game():
     def reset_available_moves(self):
         self.available_moves = None
 
-    def move(self, move):
-        self.current_board.move(move)
+    def do_move(self, move):
+        self.current_board.do_move(move)
         self.move_path.append((self.current_player, move))
         self.reset_available_moves()
         
@@ -45,10 +45,8 @@ class Game():
             self.change_player()
 
         if self.is_over():
-            print("Game Over!")
             return GAME_OVER
         if self.is_drawn():
-            print("Game Draw!")
             return GAME_DRAW
         return GAME_CONTINUE
 
@@ -84,7 +82,7 @@ class Game():
         normal_jumps = []
         for king_jump in king_jumps:
             board_tmp = copy.deepcopy(self.current_board)
-            board_tmp.move(king_jump)
+            board_tmp.do_move(king_jump)
             king_jumps, jump_moves, _ = board_tmp.get_available_moves(king_jump.moves[-1])
             can_take_piece = (len(king_jumps) + len(jump_moves)) >= 1
             if can_take_piece:

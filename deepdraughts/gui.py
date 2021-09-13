@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 15:56:20
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-13 11:44:54
+LastEditTime: 2021-09-14 00:36:28
 Description: 
 '''
 
@@ -56,7 +56,7 @@ class GUI():
             pg.draw.circle(self.surface, self.COLOR_WHITE if player == WHITE else self.COLOR_BLACK, 
                             (x, y), self.piece_radius)
             if isking:
-                pg.draw.circle(self.surface, self.COLOR_BLACK if player == WHITE else self.COLOR_BLACK, 
+                pg.draw.circle(self.surface, self.COLOR_BLACK if player == WHITE else self.COLOR_WHITE, 
                                 (x, y), self.king_radius1)
                 pg.draw.circle(self.surface, self.COLOR_WHITE if player == WHITE else self.COLOR_BLACK, 
                                 (x, y), self.king_radius2)
@@ -88,12 +88,17 @@ class GUI():
                 return GUI_RIGHTCLICK, ()
         return GUI_WAIT, ()
 
+    def read_game_status(self, game, status):
+        if status == GAME_OVER:
+            print("Game Over", "WHITE" if game.current_player == BLACK else "BLACK", "wins.")
+        elif status == GAME_DRAW:
+            print("Game Draw")
+
     def update_by_human_action(self, action, info, game, pos_list, available_moves):
         if action == GUI_RIGHTCLICK:
             self.reset_drawing()
-            return
 
-        if action == GUI_LEFTCLICK:
+        elif action == GUI_LEFTCLICK:
             mouse_y, mouse_x = info
             row = int(mouse_x / self.square_size) + 1
             col = int(mouse_y / self.square_size) + 1
@@ -104,26 +109,29 @@ class GUI():
             # if move piece
             for move in self.next_moves:
                 if pos == move.moves[-1]:
-                    game.move(move)
+                    game_status = game.do_move(move)
                     print(str(game))
+                    self.read_game_status(game, game_status)
+
                     # reset last action
                     self.reset_drawing()
-                    return
+                    return game_status
 
             # reset last action
             self.reset_drawing()
 
             # select piece
             if pos in pos_list:
-                if game.current_board.pieces[pos].player != game.current_player:
-                    return
-
-                # show available moves.
-                for move in available_moves:
-                    if pos == move.moves[-2]:
-                        self.next_moves.append(move)
-                if len(self.next_moves) >= 1:
-                    self.selected_pos = pos
+                # can only interact with player's pieces
+                if game.current_board.pieces[pos].player == game.current_player:
+                    # show available moves.
+                    for move in available_moves:
+                        if pos == move.moves[-2]:
+                            self.next_moves.append(move)
+                    if len(self.next_moves) >= 1:
+                        self.selected_pos = pos
+        return GUI_WAIT
+            
 
     def is_human_playing(self, game, player_white, player_black):
         return (game.current_player == WHITE and player_white == HUMAN_PLAYER) or \
@@ -158,10 +166,14 @@ class GUI():
                         running = False
                     elif human_action == GUI_WAIT:
                         continue
-                    self.update_by_human_action(human_action, info, game, pos_list, available_moves)
+                    status = self.update_by_human_action(human_action, info, game, pos_list, available_moves)
+                    if status == GAME_DRAW or status == GAME_OVER:
+                        running = False
             else:
                 policy = policy_white if game.current_player == WHITE else policy_black
-                # TODO
+                move = policy.get_action(game)
+                game_status = game.do_move(move)
+                self.read_game_status(game, game_status)
 
             self.draw_background()
             self.draw_pieces(pos_list, player_list, isking_list, game.current_board.nsize)
@@ -182,5 +194,7 @@ class GUI():
         pg.quit()
 
 if __name__ == "__main__":
+    from mcts_pure import MCTSPlayer as MCTS_Pure
     gui = GUI()
-    gui.run()
+    mcts_player = MCTS_Pure(c_puct=5, n_playout=1000)
+    gui.run(player_black=AI_PLAYER, policy_black=mcts_player)

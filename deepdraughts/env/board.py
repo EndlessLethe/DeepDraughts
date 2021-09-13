@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:36:26
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-13 00:36:51
+LastEditTime: 2021-09-13 23:04:16
 Description: 
 '''
 
@@ -85,10 +85,10 @@ class Board():
         return is_ok
 
     
-    def move(self, move):
-        self._move(move.moves[-2], move.moves[-1], move.taken_pos)
+    def do_move(self, move):
+        self.move(move.moves[-2], move.moves[-1], move.taken_pos)
 
-    def _move(self, pos_from, pos_to, taken_pos = None):
+    def move(self, pos_from, pos_to, taken_pos = None):
         '''
         Move the piece in pos_from to pos_to.
         '''
