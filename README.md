@@ -2,7 +2,7 @@
  * @Author: Zeng Siwei
  * @Date: 2021-09-12 00:27:58
  * @LastEditors: Zeng Siwei
- * @LastEditTime: 2021-09-13 01:27:19
+ * @LastEditTime: 2021-09-14 23:41:35
  * @Description: 
 -->
 # DeepDraughts
@@ -11,7 +11,22 @@
 ## Play with friends
 To play with firends, just using following command:
 ```
-python gui.py
+python run.py
+```
+
+## Play with AI
+To play with firends, just using following command:
+```
+python run.py --player pure_mcts
+```
+
+If using pure MCTS AI (a non-deeping AI method), by setting `n_playout = 10000` you will have a decent AI player, 
+who're good at positioning piece and somehow weak at the end of a game. `n_playout = 1000` will bring you an 
+unstable player whose choice may be confusing and bad rarely.
+
+When you want to play with a stronger player, you can use following command:
+```
+python run.py --player alphazero
 ```
 
 

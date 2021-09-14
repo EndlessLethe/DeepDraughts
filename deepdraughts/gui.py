@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 15:56:20
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-14 00:36:28
+LastEditTime: 2021-09-14 23:22:20
 Description: 
 '''
 
@@ -88,13 +88,14 @@ class GUI():
                 return GUI_RIGHTCLICK, ()
         return GUI_WAIT, ()
 
-    def read_game_status(self, game, status):
-        if status == GAME_OVER:
-            print("Game Over", "WHITE" if game.current_player == BLACK else "BLACK", "wins.")
-        elif status == GAME_DRAW:
-            print("Game Draw")
-
     def update_by_human_action(self, action, info, game, pos_list, available_moves):
+        '''
+        Args: 
+            action, info: Human interactions.
+
+        Returns: 
+            Game_status: Whether game is over.
+        '''        
         if action == GUI_RIGHTCLICK:
             self.reset_drawing()
 
@@ -111,10 +112,10 @@ class GUI():
                 if pos == move.moves[-1]:
                     game_status = game.do_move(move)
                     print(str(game))
-                    self.read_game_status(game, game_status)
-
+                    
                     # reset last action
                     self.reset_drawing()
+
                     return game_status
 
             # reset last action
@@ -130,8 +131,23 @@ class GUI():
                             self.next_moves.append(move)
                     if len(self.next_moves) >= 1:
                         self.selected_pos = pos
-        return GUI_WAIT
-            
+        return GAME_CONTINUE
+    
+    def read_game_status(self, status):
+
+        print("game status", status)
+        if status == GAME_CONTINUE:
+            return GUI_WAIT
+        else:
+            if status == GAME_WHITE_WIN:
+                print("Game Over.", "WHITE", "wins.")
+            elif status == GAME_BLACK_WIN:
+                print("Game Over.", "BLACK", "wins.")
+            elif status == GAME_DRAW:
+                print("Game Draw.")
+            else:
+                raise Exception("Game Status Type Error.")
+            return GUI_EXIT
 
     def is_human_playing(self, game, player_white, player_black):
         return (game.current_player == WHITE and player_white == HUMAN_PLAYER) or \
@@ -166,14 +182,17 @@ class GUI():
                         running = False
                     elif human_action == GUI_WAIT:
                         continue
-                    status = self.update_by_human_action(human_action, info, game, pos_list, available_moves)
-                    if status == GAME_DRAW or status == GAME_OVER:
+                    game_status = self.update_by_human_action(human_action, info, game, pos_list, available_moves)
+                    gui_status = self.read_game_status(game_status)
+                    if gui_status == GUI_EXIT:
                         running = False
             else:
                 policy = policy_white if game.current_player == WHITE else policy_black
                 move = policy.get_action(game)
                 game_status = game.do_move(move)
-                self.read_game_status(game, game_status)
+                gui_status = self.read_game_status(game_status)
+                if gui_status == GUI_EXIT:
+                    running = False
 
             self.draw_background()
             self.draw_pieces(pos_list, player_list, isking_list, game.current_board.nsize)
@@ -198,3 +217,4 @@ if __name__ == "__main__":
     gui = GUI()
     mcts_player = MCTS_Pure(c_puct=5, n_playout=1000)
     gui.run(player_black=AI_PLAYER, policy_black=mcts_player)
+    # gui.run()

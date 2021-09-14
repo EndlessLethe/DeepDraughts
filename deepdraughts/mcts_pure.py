@@ -88,16 +88,6 @@ class TreeNode(object):
         # Update Q, a running average of values for all visits.
         self._Q += 1.0*(leaf_value - self._Q) / self._n_visits
 
-    def update_recursive(self, leaf_value, end_player):
-        """Like a call to update(), but applied recursively for all ancestors.
-        """
-        # If it is not root, this node's parent should be updated first.
-        if self._parent:
-            self._parent.update_recursive(leaf_value, end_player)
-        if self.player != end_player:
-            leaf_value = -leaf_value
-        self.update(leaf_value)
-
     def get_value(self, c_puct):
         """Calculate and return the value for this node.
         It is a combination of leaf evaluations Q, and this node's prior
@@ -142,51 +132,63 @@ class MCTS(object):
         State is modified in-place, so a copy must be provided.
         """
         node = self._root
-        node.player = state.current_player
-        while(1):
+        list_node = [node]
+        list_player = [state.current_player]
+        while True:
             if node.is_leaf():
-
                 break
+
             # Greedily select next move.
             action, node = node.select(self._c_puct)
-            node.player = state.current_player
             state.do_move(action)
+            list_node.append(node)
+            list_player.append(state.current_player)
 
         action_probs, _ = self._policy(state)
         # Check for end of game
-        end = state.is_over()
-        if not end:
+        is_over, _ = state.is_over()
+        if not is_over:
             node.expand(action_probs)
         # Evaluate the leaf node by random rollout
+        current_player = state.current_player
         leaf_value = self._evaluate_rollout(state)
+        
         # Update value and visit count of nodes in this traversal.
-        node.update_recursive(leaf_value, state.current_player)
+        # Applied recursively for all ancestors
+        # Note: 
+        # 1. node.update() is an indepentent operation. So the order is unneccesary.
+        # 2. Why update -leaf_value? Easily to check by playing a game. Or see: https://github.com/junxiaosong/AlphaZero_Gomoku/issues/25
+
+        for node, player in zip(list_node, list_player):
+            node.update(-leaf_value if player == current_player else leaf_value)
 
     def _evaluate_rollout(self, state, limit=1000):
         """Use the rollout policy to play until the end of the game,
         returning +1 if the current player wins, -1 if the opponent wins,
         and 0 if it is a tie.
+
+        Returns:
+            value: Value of current state.
         """
-        player = state.current_player
+        start_player = state.current_player
+        value = None
         for i in range(limit):
-            is_over = state.is_over()
-            if is_over:
-                winner = -1 if state.current_player == 1 else 1
+            is_over, winner = state.is_over()
+            if is_over: 
+                value = 1 if winner == start_player else -1
                 break
             is_drawn = state.is_drawn()
             if is_drawn:
-                winner = 0
+                value = 0
                 break
             action_probs = rollout_policy_fn(state)
             max_action = max(action_probs, key=itemgetter(1))[0]
             state.do_move(max_action)
-        else:
+        if value is None:
             # If no break from the loop, issue a warning.
             print("WARNING: rollout reached move limit")
-        if winner == 0:  # tie
-            return 0
-        else:
-            return -1 # only current player will lose
+            value = 0
+        return value
 
      # TODO parallel
     def get_move(self, state):
@@ -228,10 +230,12 @@ class MCTSPlayer(object):
 
     def get_action(self, game):
         sensible_moves = game.get_all_available_moves()
-        if len(sensible_moves) > 0:
+        if len(sensible_moves) >= 2:
             move = self.mcts.get_move(game)
             self.mcts.update_with_move(-1)
             return move
+        elif len(sensible_moves) == 1:
+            return sensible_moves[0]
         else:
             print("WARNING: the game is full")
 

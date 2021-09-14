@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 16:20:41
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-13 23:28:04
+LastEditTime: 2021-09-14 23:51:12
 Description: 
 '''
 
@@ -22,8 +22,15 @@ class Game():
         self.available_moves = None
         self.n_king_move = 0
 
+        self.is_chain_taking = False
+        self.chain_taking_pos = []
+
     def reset_available_moves(self):
         self.available_moves = None
+
+    def reset_chain_taking_states(self):
+        self.is_chain_taking = False
+        self.chain_taking_pos = []
 
     def do_move(self, move):
         self.current_board.do_move(move)
@@ -40,12 +47,15 @@ class Game():
         can_take_piece = (len(king_jumps) + len(jumps)) >= 1
         if move.take_piece and can_take_piece:
             # 连吃 chain-taking
-            pass
+            self.is_chain_taking = True
+            self.chain_taking_pos = [move.moves[-2], move.moves[-1]]
         else:
             self.change_player()
+            self.reset_chain_taking_states()
 
-        if self.is_over():
-            return GAME_OVER
+        is_over, winner = self.is_over()
+        if is_over:
+            return GAME_WHITE_WIN if winner == WHITE else GAME_BLACK_WIN
         if self.is_drawn():
             return GAME_DRAW
         return GAME_CONTINUE
@@ -53,9 +63,9 @@ class Game():
     def is_over(self):
         available_moves = self.get_all_available_moves()
         if len(available_moves) == 0:
-            return True
+            return True, WHITE if self.current_player == BLACK else BLACK
         else:
-            return False
+            return False, None
 
     def is_drawn(self):
         '''
@@ -68,29 +78,42 @@ class Game():
 
     def get_all_available_moves(self):
         # TODO Brazilian rule 有多吃多
+        # TODO 不能跳过同一个棋子两次
         if self.available_moves is not None:
             return self.available_moves
 
-        king_jumps, jump_moves, normal_moves = self.current_board.get_all_available_moves(self.current_player)
+        if self.is_chain_taking:
+            king_jumps, jump_moves, _ = self.current_board.get_available_moves(self.chain_taking_pos[-1])
+            
+            # check whether go over the same piece
+            # 1. whether the opposite direction. if false, it's ok
+            # 2. if true, whether the pos is mono. if true, it's ok
+            # 3. if false, remove this move
+
+        else:
+            king_jumps, jump_moves, normal_moves = self.current_board.get_all_available_moves(self.current_player)
 
         if len(king_jumps)  == 0:
             self.available_moves = jump_moves if len(jump_moves) >= 1 else normal_moves
             return self.available_moves
 
-        # king jump must be carefully dealt when chain-taking
-        chain_taking_jumps = []
-        normal_jumps = []
+        # king jump must be carefully dealt when chain-taking:
+        # if king can take a piece, and after this move another piece can be taken,
+        # only continueing chain-taking is available.
+        king_chain_takings = []
+        king_normal_jumps = []
         for king_jump in king_jumps:
             board_tmp = copy.deepcopy(self.current_board)
             board_tmp.do_move(king_jump)
-            king_jumps, jump_moves, _ = board_tmp.get_available_moves(king_jump.moves[-1])
-            can_take_piece = (len(king_jumps) + len(jump_moves)) >= 1
+            tmp_king_jumps, tmp_jump_moves, _ = board_tmp.get_available_moves(king_jump.moves[-1])
+            can_take_piece = (len(tmp_king_jumps) + len(tmp_jump_moves)) >= 1
             if can_take_piece:
-                chain_taking_jumps.append(king_jump)
+                king_chain_takings.append(king_jump)
             else:
-                normal_jumps.append(king_jump)
+                king_normal_jumps.append(king_jump)
 
-        self.available_moves = chain_taking_jumps if len(chain_taking_jumps) >= 1 else normal_jumps
+        self.available_moves = king_chain_takings if len(king_chain_takings) >= 1 else king_normal_jumps
+        self.available_moves.extend(jump_moves)
         return self.available_moves
 
     def change_player(self):
