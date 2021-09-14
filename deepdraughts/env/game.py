@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 16:20:41
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-14 23:51:12
+LastEditTime: 2021-09-15 00:32:16
 Description: 
 '''
 
@@ -23,14 +23,14 @@ class Game():
         self.n_king_move = 0
 
         self.is_chain_taking = False
-        self.chain_taking_pos = []
+        self.chain_taking_moves = []
 
     def reset_available_moves(self):
         self.available_moves = None
 
     def reset_chain_taking_states(self):
         self.is_chain_taking = False
-        self.chain_taking_pos = []
+        self.chain_taking_moves = []
 
     def do_move(self, move):
         self.current_board.do_move(move)
@@ -44,11 +44,26 @@ class Game():
 
         # check whether the player can take another piece after this move.
         king_jumps, jumps, _ = self.current_board.get_available_moves(move.moves[-1])
+
+        # The folling code block is the same with get_all_available_moves()
+        # for checking whether go over the same piece
+        if king_jumps:
+            list_remove = []
+            for king_jump in king_jumps:
+                if is_opposite_direcion(king_jump.direction, move.direction):
+                    pos_a = move.moves[-2]
+                    pos_b = move.moves[-1]
+                    pos_c = king_jump.moves[-1]
+                    if not ((pos_a > pos_b and pos_b > pos_c) or (pos_a < pos_b and pos_b < pos_c)):
+                        list_remove.append(king_jump)
+            for tmp_move in list_remove:
+                king_jumps.remove(tmp_move)
+
         can_take_piece = (len(king_jumps) + len(jumps)) >= 1
         if move.take_piece and can_take_piece:
             # 连吃 chain-taking
             self.is_chain_taking = True
-            self.chain_taking_pos = [move.moves[-2], move.moves[-1]]
+            self.chain_taking_moves = [move]
         else:
             self.change_player()
             self.reset_chain_taking_states()
@@ -83,12 +98,24 @@ class Game():
             return self.available_moves
 
         if self.is_chain_taking:
-            king_jumps, jump_moves, _ = self.current_board.get_available_moves(self.chain_taking_pos[-1])
+            # last move's pos_to
+            last_move = self.chain_taking_moves[-1]
+            king_jumps, jump_moves, normal_moves = self.current_board.get_available_moves(last_move.moves[-1])
             
             # check whether go over the same piece
             # 1. whether the opposite direction. if false, it's ok
             # 2. if true, whether the pos is mono. if true, it's ok
             # 3. if false, remove this move
+            list_remove = []
+            for king_jump in king_jumps:
+                if is_opposite_direcion(king_jump.direction, last_move.direction):
+                    pos_a = last_move.moves[-2]
+                    pos_b = last_move.moves[-1]
+                    pos_c = king_jump.moves[-1]
+                    if not ((pos_a > pos_b and pos_b > pos_c) or (pos_a < pos_b and pos_b < pos_c)):
+                        list_remove.append(king_jump)
+            for move in list_remove:
+                king_jumps.remove(move)
 
         else:
             king_jumps, jump_moves, normal_moves = self.current_board.get_all_available_moves(self.current_player)

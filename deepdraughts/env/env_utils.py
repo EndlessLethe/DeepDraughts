@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:31:25
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-14 16:16:05
+LastEditTime: 2021-09-15 00:13:45
 Description: 
 '''
 
@@ -127,6 +127,16 @@ def coord2pos(row, col, nsize, origin = "left_lower"):
 def coord2fstr():
     # TODO
     pass
+
+def get_direction(pos_from, pos_to):
+    raise NotImplemented()
+
+def is_opposite_direcion(d1, d2):
+    if (d1 == "left_upper" and d2 == "right_lower") or (d2 == "left_upper" and d1 == "right_lower"):
+        return True
+    if (d1 == "left_lower" and d2 == "right_upper") or (d2 == "left_lower" and d1 == "right_upper"):
+        return True
+    return False
 
 if __name__ == "__main__":
     a = "0"

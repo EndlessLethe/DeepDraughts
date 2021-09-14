@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 15:56:20
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-14 23:22:20
+LastEditTime: 2021-09-15 00:42:32
 Description: 
 '''
 
@@ -33,6 +33,8 @@ class GUI():
         self.surface = None
 
         # interaction states
+        self.game = Game()
+
         self.selected_pos = None
         self.take_piece = False
         self.next_moves = []
@@ -88,7 +90,7 @@ class GUI():
                 return GUI_RIGHTCLICK, ()
         return GUI_WAIT, ()
 
-    def update_by_human_action(self, action, info, game, pos_list, available_moves):
+    def update_by_human_action(self, action, info, pos_list, available_moves):
         '''
         Args: 
             action, info: Human interactions.
@@ -104,14 +106,14 @@ class GUI():
             row = int(mouse_x / self.square_size) + 1
             col = int(mouse_y / self.square_size) + 1
             
-            pos = coord2pos(row, col, game.current_board.nsize, "left_upper")
+            pos = coord2pos(row, col, self.game.current_board.nsize, "left_upper")
             print(mouse_y, mouse_x, row, col, pos)
 
             # if move piece
             for move in self.next_moves:
                 if pos == move.moves[-1]:
-                    game_status = game.do_move(move)
-                    print(str(game))
+                    game_status = self.game.do_move(move)
+                    print(str(self.game))
                     
                     # reset last action
                     self.reset_drawing()
@@ -124,7 +126,7 @@ class GUI():
             # select piece
             if pos in pos_list:
                 # can only interact with player's pieces
-                if game.current_board.pieces[pos].player == game.current_player:
+                if self.game.current_board.pieces[pos].player == self.game.current_player:
                     # show available moves.
                     for move in available_moves:
                         if pos == move.moves[-2]:
@@ -149,9 +151,9 @@ class GUI():
                 raise Exception("Game Status Type Error.")
             return GUI_EXIT
 
-    def is_human_playing(self, game, player_white, player_black):
-        return (game.current_player == WHITE and player_white == HUMAN_PLAYER) or \
-                (game.current_player == BLACK and player_black == HUMAN_PLAYER)
+    def is_human_playing(self, player_white, player_black):
+        return (self.game.current_player == WHITE and player_white == HUMAN_PLAYER) or \
+                (self.game.current_player == BLACK and player_black == HUMAN_PLAYER)
 
     def run(self, player_white = HUMAN_PLAYER, player_black = HUMAN_PLAYER, 
             policy_white = None, policy_black = None):
@@ -164,47 +166,47 @@ class GUI():
         pg.font.init()
         font = pg.font.Font(None, 36)
 
-        game = Game()
+        
         
         running = True
         while running:
             # quering current states for each frame
-            pieces = game.current_board.get_pieces()
+            pieces = self.game.current_board.get_pieces()
             pos_list = [x.pos for x in pieces]
             player_list = [x.player for x in pieces]
             isking_list = [x.isking for x in pieces]
-            available_moves = game.get_all_available_moves()
+            available_moves = self.game.get_all_available_moves()
 
-            if self.is_human_playing(game, player_white, player_black):
+            if self.is_human_playing(player_white, player_black):
                 for event in pg.event.get():
                     human_action, info = self.listen_human_action(event)
                     if human_action == GUI_EXIT:
                         running = False
                     elif human_action == GUI_WAIT:
                         continue
-                    game_status = self.update_by_human_action(human_action, info, game, pos_list, available_moves)
+                    game_status = self.update_by_human_action(human_action, info, pos_list, available_moves)
                     gui_status = self.read_game_status(game_status)
                     if gui_status == GUI_EXIT:
                         running = False
             else:
-                policy = policy_white if game.current_player == WHITE else policy_black
-                move = policy.get_action(game)
-                game_status = game.do_move(move)
+                policy = policy_white if self.game.current_player == WHITE else policy_black
+                move = policy.get_action(self.game)
+                game_status = self.game.do_move(move)
                 gui_status = self.read_game_status(game_status)
                 if gui_status == GUI_EXIT:
                     running = False
 
             self.draw_background()
-            self.draw_pieces(pos_list, player_list, isking_list, game.current_board.nsize)
+            self.draw_pieces(pos_list, player_list, isking_list, self.game.current_board.nsize)
             
             if self.selected_pos is not None and self.next_moves:
                 for move in self.next_moves:
                     pos = move.moves[-1]
-                    self.draw_select(pos, game.current_board.nsize)
+                    self.draw_select(pos, self.game.current_board.nsize)
             else:
                 for move in available_moves:
                     pos = move.moves[-1]
-                    self.draw_select(pos, game.current_board.nsize)
+                    self.draw_select(pos, self.game.current_board.nsize)
             
             self.screen.blit(self.surface, (0, 0))
             pg.display.flip()

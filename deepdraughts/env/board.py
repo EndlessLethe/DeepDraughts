@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:36:26
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-13 23:04:16
+LastEditTime: 2021-09-15 00:23:18
 Description: 
 '''
 
@@ -175,21 +175,20 @@ class Board():
                 
                 # 如果周围有子，其后方没有子，且异色
                 if next_pos in self.pieces and jump_pos not in self.pieces and self.pieces[next_pos].player != piece.player:
-                    jump_moves.append(Move(pos, jump_pos, MEN_MOVE, True, next_pos))
+                    jump_moves.append(Move(pos, jump_pos, key, MEN_MOVE, True, next_pos))
             
             # normal moves
-            if len(jump_moves) == 0:
-                for key in HOP_POS_ARGS:
-                    next_pos = dict_pos[key][0]
-                    if next_pos is None:
-                        continue
-                    if piece.player == WHITE and next_pos > pos: # 不能往回走
-                        continue
-                    if piece.player == BLACK and next_pos < pos:
-                        continue
-                    
-                    if next_pos not in self.pieces:
-                        normal_moves.append(Move(pos, next_pos, MEN_MOVE))
+            for key in HOP_POS_ARGS:
+                next_pos = dict_pos[key][0]
+                if next_pos is None:
+                    continue
+                if piece.player == WHITE and next_pos > pos: # 不能往回走
+                    continue
+                if piece.player == BLACK and next_pos < pos:
+                    continue
+                
+                if next_pos not in self.pieces:
+                    normal_moves.append(Move(pos, next_pos, key, MEN_MOVE))
 
         # king moves
         else:
@@ -221,15 +220,13 @@ class Board():
                     # find a place where can jump to
                     else:
                         if meet_diff_color is not None:
-                            tmp_jump.append(Move(pos, next_pos, KING_MOVE, True, meet_diff_color))
+                            tmp_jump.append(Move(pos, next_pos, key, KING_MOVE, True, meet_diff_color))
                         else:
-                            tmp_normal.append(Move(pos, next_pos, KING_MOVE))
+                            tmp_normal.append(Move(pos, next_pos, key, KING_MOVE))
                 
                 # deal each direction
-                if len(tmp_jump) >= 1:
-                    king_jump_moves.extend(tmp_jump)
-                else:
-                    normal_moves.extend(tmp_normal)
+                king_jump_moves.extend(tmp_jump)
+                normal_moves.extend(tmp_normal)
 
 
         self.piece_moves[pos] = (king_jump_moves, jump_moves, normal_moves)
@@ -265,7 +262,7 @@ class Board():
         
 class Move():
     @classmethod
-    def init_by_str(cls, str_move):
+    def init_by_str(cls, str_move, game):
         take_piece = False
         taken_pos = None
         force = False
@@ -281,11 +278,15 @@ class Move():
         else:
             raise Exception("Invalid file format.")
         pos_from, pos_to = (int(x) for x in str_move.split(sep))
+        direction = get_direction(pos_from, pos_to)
+        move_type = MEN_MOVE if not game.current_borad.pieces[pos_from].isking else KING_MOVE
         
-        return Move(pos_from, pos_to, take_piece, taken_pos, force)
+        return Move(pos_from, pos_to, direction, move_type, take_piece, taken_pos, force)
 
-    def __init__(self, pos_from, pos_to, move_type = MEN_MOVE, take_piece = False, taken_pos = None, force = False) -> None:
-        self.moves = [pos_from, pos_to]
+    def __init__(self, pos_from, pos_to, direction, move_type = MEN_MOVE, 
+                take_piece = False, taken_pos = None, force = False) -> None:
+        self.moves = (pos_from, pos_to)
+        self.direction = direction
         self.force = force
         self.take_piece = take_piece
         self.taken_pos = taken_pos
@@ -300,10 +301,3 @@ class Move():
 
     # def __hash__(self):
         
-
-    def merge(self, merging_move):
-        if len(merging_move.moves) != 2:
-            raise Exception("Length of merging move is not 2")
-        if self.moves[-1] != merging_move.moves[0]:
-            raise Exception("Merging move does not match.")
-        self.moves.append(merging_move[1])
