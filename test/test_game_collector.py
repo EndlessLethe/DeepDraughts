@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-15 23:02:07
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-17 13:43:06
+LastEditTime: 2021-09-18 00:31:52
 Description: 
 '''
 
@@ -27,31 +27,33 @@ def test_selfplay():
     start_time = time.time()
     gc.parallel_collect_selfplay(n_core = 8, policy = mcts_player, batch_size = 20, filepath = dir_file + "selfplay1.pkl")
     end_time = time.time()
-    print("Paralleled " + str(10) + " selfplay with " + str(8) + " core:", end_time-start_time, "s")
-    # Paralleled 10 selfplay with 5 core: 1021.0484848022461 s
-    # Paralleled 10 selfplay with 8 core: 822.6482546329498 s
-    # Paralleled 10 selfplay with 8 core: 1561.856823682785 s
+    print("Paralleled " + str(20) + " selfplay with " + str(8) + " core:", end_time-start_time, "s")
+    # Paralleled 20 selfplay with 8 core: 1189.294320821762 s
 
-def test_reading():
+def test_load_selfplay():
     dir_file = "deepdraughts/savedata/"
     gc = GameCollector()
     datas = gc.load_selfplay(dir_file + "selfplay1.pkl")
     
-    
     # datas = [datas[2]]
-    for winner, game, states, mcts_probs, policy_grad in datas:
-        gui = GUI()
+    for winner, states, mcts_probs, policy_grad in datas:
         print(winner)
-        print(game)
         # print(states)
         print(mcts_probs)
         print(policy_grad)
-        gui.replay(game)
+
+        gui = GUI()
+        gui.replay(states[-1])
+
+        # for game in states:
+        #     gui = GUI()
+        #     gui.replay(game)
+        # break
 
 
 
 if __name__ == "__main__":
     # test_selfplay()
-    test_reading()
+    test_load_selfplay()
     
     

@@ -2,9 +2,12 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:31:25
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-17 13:11:10
+LastEditTime: 2021-09-18 01:32:54
 Description: 
 '''
+
+import numpy as np
+from numpy.lib.index_tricks import nd_grid
 
 # Basic code
 # For training AI, use 1 and -1
@@ -41,7 +44,7 @@ DRL_PLAYER = 34
 N_GRID_64 = 64
 N_GRID_100 = 100
 N_SIZE_8 = 8
-
+N_SIZE_10 = 10
 
 # Var Tables
 KING_POS_WHITE_64 = set([2, 4, 6, 8])
@@ -73,12 +76,6 @@ ASCII_LOWER_A = 48
 '''
     Position function.
 
-    Main format for piece position:
-    1. idx. Starting index from left upper corner with number 1.
-    2. string. Used in chess, the format is indexed from left lower corner. 
-        And each row is described by char 'A' to 'H'.
-    3. tuple(x, y). The origin is left lower corner by default, to keep the same with chess format.
-		
 '''
 
 HOP_POS_ARGS = {
@@ -87,6 +84,85 @@ HOP_POS_ARGS = {
     "left_lower" : (1, -1), 
     "right_lower" : (1, 1)
 }
+
+
+def in_boundary_64(pos, N_GRID):
+    return pos >= 1 and pos <= N_GRID
+
+def get_khop_pos(pos, N_SIZE, N_GRID, VALID_POS, EDGE_POS):
+    '''
+    It's sure that all pos in dict_pos is valid.
+
+    Args: 
+    
+    Returns: 
+    
+    '''        
+    dict_pos = dict()
+    
+    for key, args in HOP_POS_ARGS.items():
+        dict_pos[key] = dict()
+        is_invalid = False
+        for i in range(N_SIZE):
+            if is_invalid:
+                dict_pos[key][i] = None
+                continue
+
+            # make sure in boundary
+            next_pos = pos + (i+1)*args[0]*N_SIZE + (i+1)*args[1]
+            if not in_boundary_64(next_pos, N_GRID) or next_pos not in VALID_POS:
+                is_invalid = True
+                next_pos = None
+            dict_pos[key][i] = next_pos
+
+            # edge pos (col 1 or 8)
+            if next_pos in EDGE_POS:
+                is_invalid = True
+    return dict_pos
+
+KHOP_POS_64 = dict()
+for x in VALID_POS_64:
+    KHOP_POS_64[x] = get_khop_pos(x, N_SIZE_8, N_GRID_64, VALID_POS_64, EDGE_POS_64)
+
+KHOP_POS_100 = dict()
+for x in VALID_POS_100:
+    KHOP_POS_100[x] = get_khop_pos(x, N_SIZE_10, N_GRID_100, VALID_POS_100, EDGE_POS_100)
+
+def get_valid_moves(VALID_POS, HOP_POS_ARGS, KHOP_POS):
+    moves = []
+    for x in VALID_POS:
+        for key in HOP_POS_ARGS:
+            for k, next_pos in KHOP_POS[x][key].items():
+                if next_pos is None:
+                    break
+                moves.append((x, next_pos))
+    return moves
+
+MOVE_MAP_64 = dict([(x, i) for i, x in enumerate(get_valid_moves(VALID_POS_64, HOP_POS_ARGS, KHOP_POS_64))])
+MOVE_MAP_100 = dict([(x, i) for i, x in enumerate(get_valid_moves(VALID_POS_100, HOP_POS_ARGS, KHOP_POS_100))])
+
+N_ACTION_64 = len(MOVE_MAP_64)
+assert N_ACTION_64 == 280
+
+def is_opposite_direcion(d1, d2):
+    if (d1 == "left_upper" and d2 == "right_lower") or (d2 == "left_upper" and d1 == "right_lower"):
+        return True
+    if (d1 == "left_lower" and d2 == "right_upper") or (d2 == "left_lower" and d1 == "right_upper"):
+        return True
+    return False
+
+'''
+    Position format function.
+
+    Main format for piece position:
+    1. idx. Starting index from left upper corner with number 1.
+    2. string. Used in chess, the format is indexed from left lower corner. 
+        And each row is described by char 'A' to 'H'.
+    3. tuple(x, y). The origin is left lower corner by default, to keep the same with chess format.
+		
+'''
+
+
 
 def norm_pos(pos):
     if isinstance(pos, int): # idx format
@@ -129,12 +205,54 @@ def coord2fstr():
     pass
 
 
-def is_opposite_direcion(d1, d2):
-    if (d1 == "left_upper" and d2 == "right_lower") or (d2 == "left_upper" and d1 == "right_lower"):
-        return True
-    if (d1 == "left_lower" and d2 == "right_upper") or (d2 == "left_lower" and d1 == "right_upper"):
-        return True
-    return False
+'''
+    Vectorization function.          
+'''
+
+def actions2vec(actions, probs):
+    vec = np.zeros(N_ACTION_64)
+    for action, prob in zip(actions, probs):
+        vec[MOVE_MAP_64[(action.pos[-2], action.pos[-1])]] = prob
+    return vec
+
+N_STATE_64 = N_SIZE_8 * 2 + 3
+
+def state2vec(state):
+    '''
+    Network input vector:
+        - last_four_board
+            - white man
+            - white king
+            - black man
+            - black king
+        - player -1 / 1
+        - is_chain_taking 0/1
+        - taken_piece nsize * 2
+        - n_king_move 0/1
+    ''' 
+    nsize = state.current_board.nsize
+    ngrid = state.current_board.ngrid
+    vec_board = np.zeros((4, ngrid))   
+    for pos, piece in state.current_board.pieces.items():
+        pos -= 1
+        if piece.isking:
+            if piece.player == WHITE:
+                vec_board[1][pos] = 1
+            elif piece.player == BLACK:
+                vec_board[3][pos] = 1
+        else:
+            if piece.player == WHITE:
+                vec_board[0][pos] = 1
+            elif piece.player == BLACK:
+                vec_board[2][pos] = 1
+    vec_board = vec_board.reshape((4, nsize, nsize))
+    vec_state = np.zeros(3+nsize*2)
+    vec_state[0] = 1 if state.current_player == WHITE else BLACK
+    vec_state[1] = state.is_chain_taking
+    for i, move in enumerate(state.chain_taking_moves):
+        vec_state[i+2] = move.taken_pos-1
+    vec_state[-1] = state.n_king_move
+    return vec_board, vec_state
 
 if __name__ == "__main__":
     a = "0"

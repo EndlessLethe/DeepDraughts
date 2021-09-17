@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:36:26
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-17 13:12:14
+LastEditTime: 2021-09-18 01:23:17
 Description: 
 '''
 
@@ -86,7 +86,7 @@ class Board():
 
     
     def do_move(self, move):
-        self.move(move.moves[-2], move.moves[-1], move.taken_pos)
+        self.move(move.pos[-2], move.pos[-1], move.taken_pos)
 
     def move(self, pos_from, pos_to, taken_pos = None):
         '''
@@ -111,44 +111,6 @@ class Board():
     def get_pieces(self):
         return [x for x in self.pieces.values()]
 
-    def get_khop_pos(self, pos, k):
-        '''
-        It's sure that all pos in dict_pos is valid.
-
-        Args: 
-		
-        Returns: 
-		
-        '''        
-        dict_pos = dict()
-        EDGE_POS = self.get_edge_pos()
-        VALID_POS = self.get_valid_pos()
-        
-        for key, args in HOP_POS_ARGS.items():
-            dict_pos[key] = dict()
-            is_invalid = False
-            for i in range(k):
-                if is_invalid:
-                    dict_pos[key][i] = None
-                    continue
-
-                # make sure in boundary
-                next_pos = pos + (i+1)*args[0]*self.nsize + (i+1)*args[1]
-                if not self.in_boundary(next_pos) or next_pos not in VALID_POS:
-                    is_invalid = True
-                    next_pos = None
-                dict_pos[key][i] = next_pos
-
-                # edge pos (col 1 or 8)
-                if next_pos in EDGE_POS:
-                    is_invalid = True
-                # print("for pos", pos, key, i, "next", next_pos, is_invalid)
-        return dict_pos
-
-
-    def in_boundary(self, pos):
-        return pos >= 1 and pos <= self.ngrid
-
     def get_available_moves(self, pos):
         if pos in self.piece_moves:
             return self.piece_moves[pos]
@@ -161,7 +123,7 @@ class Board():
         
         # normal piece
         if piece.isking == False:
-            dict_pos = self.get_khop_pos(pos, 2)
+            dict_pos = KHOP_POS_64[pos]
 
             # jump moves
             for key in HOP_POS_ARGS:
@@ -191,7 +153,7 @@ class Board():
 
         # king moves
         else:
-            dict_pos = self.get_khop_pos(pos, self.nsize)
+            dict_pos = KHOP_POS_64[pos]
             
             for key in HOP_POS_ARGS:
                 # for each direction, check:
@@ -284,7 +246,7 @@ class Move():
 
     def __init__(self, pos_from, pos_to, direction, move_type = MEN_MOVE, 
                 take_piece = False, taken_pos = None, force = False) -> None:
-        self.moves = (pos_from, pos_to)
+        self.pos = (pos_from, pos_to)
         self.direction = direction
         self.force = force
         self.take_piece = take_piece
@@ -293,10 +255,10 @@ class Move():
     
     def __str__(self) -> str:
         if self.force:
-            return "->".join([str(x) for x in self.moves])
+            return "->".join([str(x) for x in self.pos])
         if self.take_piece:
-            return "x".join([str(x) for x in self.moves])
-        return "-".join([str(x) for x in self.moves])
+            return "x".join([str(x) for x in self.pos])
+        return "-".join([str(x) for x in self.pos])
 
     # def __hash__(self):
         

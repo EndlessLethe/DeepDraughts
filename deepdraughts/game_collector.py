@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-15 16:32:59
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-17 12:56:27
+LastEditTime: 2021-09-18 00:04:35
 Description: 
 '''
 
@@ -13,18 +13,19 @@ from .env.env_utils import *
 import copy
 
 class GameCollector():
-    def self_play(self, policy, temp=1e-3):
+    def self_play(self, policy, temp=1e-3, game=None):
         """ start a self-play game using a MCTS player, reuse the search tree,
         and store the self-play data: (state, mcts_probs, z) for training
         """
         print("Start one game for self playing")
-        game = Game()
+        if game is None:
+            game = Game()
         states, mcts_probs, current_players = [], [], []
         while True:
             # move, move_probs = policy.get_action(game, temp=temp)
             move, move_probs = policy.get_action(game)
             # store the data
-            states.append(game.current_board)
+            states.append(copy.deepcopy(game))
             mcts_probs.append(move_probs)
             current_players.append(game.current_player)
             # perform a move
@@ -47,9 +48,9 @@ class GameCollector():
         # reset MCTS root node
         policy.reset()
             
-        return winner, game, states, mcts_probs, policy_grad
+        return winner, states, mcts_probs, policy_grad
 
-    def collect_selfplay(self, policy, batch_size = 1000, temp = 1e-3, filepath = None):
+    def collect_selfplay(self, policy, batch_size = 1000, temp = 1e-3, filepath = None, game = None):
         selfplay_data = []
         for i in range(batch_size):
             selfplay_data.append(self.self_play(policy, temp))
@@ -57,7 +58,7 @@ class GameCollector():
             self.dump_selfplay(selfplay_data, filepath)
         return selfplay_data
     
-    def parallel_collect_selfplay(self, n_core, policy, batch_size = 1000, temp = 1e-3, filepath = None):
+    def parallel_collect_selfplay(self, n_core, policy, batch_size = 1000, temp = 1e-3, filepath = None, game = None):
         from  multiprocessing import Pool
         pool = Pool(n_core)
         pool_results = []

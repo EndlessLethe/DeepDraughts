@@ -2,7 +2,7 @@
  * @Author: Zeng Siwei
  * @Date: 2021-09-12 00:27:58
  * @LastEditors: Zeng Siwei
- * @LastEditTime: 2021-09-17 12:51:55
+ * @LastEditTime: 2021-09-18 01:42:56
  * @Description: 
 -->
 # DeepDraughts
@@ -52,8 +52,9 @@ game = Game(rule = BRAZILIAN_RULE)
     - Playing a hundred times is recommended for fixing hidden bugs.
 3. Add pure MCTS as a basic AI
 4. Add AlphaZero-style AI
-    - Implement self-play and data collector with pure MCTS AI
-    - Implement AlphaZero-style AI (AlphaZero MCTS and NN)
+    - Implement AlphaZero-style AI (AlphaZero MCTS and untrained NN).
+    - Running GUI to test.
+    - Implement self-play and data collector with AlphaZero MCTS.
     - Trainning NN with paralleled self-play.
 
 

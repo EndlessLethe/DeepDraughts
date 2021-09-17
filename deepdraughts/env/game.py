@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 16:20:41
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-15 22:51:34
+LastEditTime: 2021-09-18 01:24:37
 Description: 
 '''
 
@@ -35,7 +35,7 @@ class Game():
 
     def do_move(self, move):
         self.current_board.do_move(move)
-        self.move_path.append((self.current_player, move))
+        self.move_path.append(move)
         self.reset_available_moves()
         
         if move.move_type == MEN_MOVE:
@@ -44,7 +44,7 @@ class Game():
             self.n_king_move += 1
 
         # check whether the player can take another piece after this move.
-        king_jumps, jumps, _ = self.current_board.get_available_moves(move.moves[-1])
+        king_jumps, jumps, _ = self.current_board.get_available_moves(move.pos[-1])
 
         # The folling code block is the same with get_all_available_moves()
         # for checking whether go over the same piece
@@ -52,9 +52,9 @@ class Game():
             list_remove = []
             for king_jump in king_jumps:
                 if is_opposite_direcion(king_jump.direction, move.direction):
-                    pos_a = move.moves[-2]
-                    pos_b = move.moves[-1]
-                    pos_c = king_jump.moves[-1]
+                    pos_a = move.pos[-2]
+                    pos_b = move.pos[-1]
+                    pos_c = king_jump.pos[-1]
                     if not ((pos_a > pos_b and pos_b > pos_c) or (pos_a < pos_b and pos_b < pos_c)):
                         list_remove.append(king_jump)
             for tmp_move in list_remove:
@@ -102,7 +102,7 @@ class Game():
         if self.is_chain_taking:
             # last move's pos_to
             last_move = self.chain_taking_moves[-1]
-            king_jumps, jump_moves, normal_moves = self.current_board.get_available_moves(last_move.moves[-1])
+            king_jumps, jump_moves, normal_moves = self.current_board.get_available_moves(last_move.pos[-1])
             
             # check whether go over the same piece
             # 1. whether the opposite direction. if false, it's ok
@@ -111,9 +111,9 @@ class Game():
             list_remove = []
             for king_jump in king_jumps:
                 if is_opposite_direcion(king_jump.direction, last_move.direction):
-                    pos_a = last_move.moves[-2]
-                    pos_b = last_move.moves[-1]
-                    pos_c = king_jump.moves[-1]
+                    pos_a = last_move.pos[-2]
+                    pos_b = last_move.pos[-1]
+                    pos_c = king_jump.pos[-1]
                     if not ((pos_a > pos_b and pos_b > pos_c) or (pos_a < pos_b and pos_b < pos_c)):
                         list_remove.append(king_jump)
             for move in list_remove:
@@ -134,7 +134,7 @@ class Game():
         for king_jump in king_jumps:
             board_tmp = copy.deepcopy(self.current_board)
             board_tmp.do_move(king_jump)
-            tmp_king_jumps, tmp_jump_moves, _ = board_tmp.get_available_moves(king_jump.moves[-1])
+            tmp_king_jumps, tmp_jump_moves, _ = board_tmp.get_available_moves(king_jump.pos[-1])
             can_take_piece = (len(tmp_king_jumps) + len(tmp_jump_moves)) >= 1
             if can_take_piece:
                 king_chain_takings.append(king_jump)
@@ -150,6 +150,9 @@ class Game():
         self.current_board.reset_available_moves()
         self.reset_available_moves()
         self.is_chain_taking = False
+
+    def to_vector(self):
+        return state2vec(self)
 
     '''
 
@@ -181,4 +184,4 @@ class Game():
     #     pass
 
     def __str__(self):
-        return ", ".join(str(x[1]) for x in self.move_path).strip(", ")
+        return ", ".join(str(x) for x in self.move_path).strip(", ")

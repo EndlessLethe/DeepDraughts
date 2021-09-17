@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 15:56:20
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-17 13:47:31
+LastEditTime: 2021-09-18 01:26:23
 Description: 
 '''
 
@@ -116,7 +116,7 @@ class GUI():
 
             # if move piece
             for move in self.next_moves:
-                if pos == move.moves[-1]:
+                if pos == move.pos[-1]:
                     game_status = self.game.do_move(move)
                     print(str(self.game))
                     
@@ -134,7 +134,7 @@ class GUI():
                 if self.game.current_board.pieces[pos].player == self.game.current_player:
                     # show available moves.
                     for move in available_moves:
-                        if pos == move.moves[-2]:
+                        if pos == move.pos[-2]:
                             self.next_moves.append(move)
                     if len(self.next_moves) >= 1:
                         self.selected_pos = pos
@@ -209,11 +209,11 @@ class GUI():
             
             if self.selected_pos is not None and self.next_moves:
                 for move in self.next_moves:
-                    pos = move.moves[-1]
+                    pos = move.pos[-1]
                     self.draw_select(pos, self.game.current_board.nsize)
             else:
                 for move in available_moves:
-                    pos = move.moves[-1]
+                    pos = move.pos[-1]
                     self.draw_select(pos, self.game.current_board.nsize)
             
             self.screen.blit(self.surface, (0, 0))
@@ -254,7 +254,10 @@ class GUI():
                     self.game = Game()
                     replay_ptr = 0
                 elif action == GUI_LEFTCLICK:
-                    game_status = self.game.do_move(replay_game.move_path[replay_ptr][1])
+                    if replay_ptr >= len(replay_game.move_path):
+                        running = False
+                        continue
+                    game_status = self.game.do_move(replay_game.move_path[replay_ptr])
                     replay_ptr += 1
                     gui_status = self.read_game_status(game_status)
                     if gui_status == GUI_EXIT:
@@ -264,7 +267,7 @@ class GUI():
             self.draw_pieces(pos_list, player_list, isking_list, self.game.current_board.nsize)
 
             for move in available_moves:
-                pos = move.moves[-1]
+                pos = move.pos[-1]
                 self.draw_select(pos, self.game.current_board.nsize)
             
             self.screen.blit(self.surface, (0, 0))
