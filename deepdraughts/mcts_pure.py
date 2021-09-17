@@ -19,7 +19,7 @@ A pure implementation of the Monte Carlo Tree Search (MCTS)
 1. Class Game / Board to store current game state
 2. methed to get availabel moves "get_all_available_moves()"
 3. methed to make a move "do_move()"
-4. methed to check game state "is_over() is_drawn()"
+4. methed to check game state "is_over()"
 
     Code needs modifying:
 1. policy_fn
@@ -175,11 +175,10 @@ class MCTS(object):
         for i in range(limit):
             is_over, winner = state.is_over()
             if is_over: 
-                value = 1 if winner == start_player else -1
-                break
-            is_drawn = state.is_drawn()
-            if is_drawn:
-                value = 0
+                if winner == None:
+                    value = 0
+                else:
+                    value = 1 if winner == start_player else -1
                 break
             action_probs = rollout_policy_fn(state)
             max_action = max(action_probs, key=itemgetter(1))[0]
@@ -190,7 +189,7 @@ class MCTS(object):
             value = 0
         return value
 
-     # TODO parallel
+     # It's impossible for python to parallel here. Theading is not real multi-theading for python!
     def get_move(self, state):
         """Runs all playouts sequentially and returns the most visited action.
         state: the current game state
@@ -222,20 +221,26 @@ class MCTSPlayer(object):
     def __init__(self, c_puct=5, n_playout=2000):
         self.mcts = MCTS(policy_value_fn, c_puct, n_playout)
 
-    def set_player_ind(self, p):
-        self.player = p
-
-    def reset_player(self):
+    def reset(self):
         self.mcts.update_with_move(-1)
 
     def get_action(self, game):
+        '''
+        Args: 
+            game: Current game states.
+
+        Returns: 
+            move: Move selected by AI player.
+            prob: Action prob to be selected.
+		
+        '''        
         sensible_moves = game.get_all_available_moves()
         if len(sensible_moves) >= 2:
             move = self.mcts.get_move(game)
             self.mcts.update_with_move(-1)
-            return move
+            return move, 1
         elif len(sensible_moves) == 1:
-            return sensible_moves[0]
+            return sensible_moves[0], 1
         else:
             print("WARNING: the game is full")
 

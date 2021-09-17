@@ -2,13 +2,14 @@
 Author: Zeng Siwei
 Date: 2021-09-11 16:20:41
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-15 00:32:16
+LastEditTime: 2021-09-15 22:51:34
 Description: 
 '''
 
 from .board import Board, Move
 from .env_utils import *
 import copy
+import pickle
 
 class Game():
     def __init__(self, player1_name = "player1", player2_name = "player2", ngrid = N_GRID_64, rule = RUSSIAN_RULE) -> None:
@@ -70,15 +71,17 @@ class Game():
 
         is_over, winner = self.is_over()
         if is_over:
+            if winner == None:
+                return GAME_DRAW
             return GAME_WHITE_WIN if winner == WHITE else GAME_BLACK_WIN
-        if self.is_drawn():
-            return GAME_DRAW
         return GAME_CONTINUE
 
     def is_over(self):
         available_moves = self.get_all_available_moves()
         if len(available_moves) == 0:
             return True, WHITE if self.current_player == BLACK else BLACK
+        elif self.is_drawn():
+            return True, None
         else:
             return False, None
 
@@ -93,7 +96,6 @@ class Game():
 
     def get_all_available_moves(self):
         # TODO Brazilian rule 有多吃多
-        # TODO 不能跳过同一个棋子两次
         if self.available_moves is not None:
             return self.available_moves
 
@@ -163,10 +165,17 @@ class Game():
                 move = Move.init_by_str(str_move)
                 print(str(move))
 
-    def load_structured_game(self):
-        # TODO
-        pass
+    @classmethod
+    def load_pickled_game(cls, filepath):
+        with open(filepath, "rb") as fp:
+            game = pickle.load(fp)
+            return game
     
+    @classmethod
+    def save_pickled_game(cls, game, filepath):
+        with open(filepath, "wb") as wfp:
+            pickle.dump(game, wfp)
+
     # def  __repr__(self):
     #     # TODO
     #     pass

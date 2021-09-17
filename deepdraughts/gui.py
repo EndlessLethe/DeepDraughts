@@ -2,13 +2,14 @@
 Author: Zeng Siwei
 Date: 2021-09-11 15:56:20
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-15 00:42:32
+LastEditTime: 2021-09-17 13:47:31
 Description: 
 '''
 
 import pygame as pg
-from env.game import Game
-from env.env_utils import *
+from .env.game import Game
+from .env.env_utils import *
+import time
 
 class GUI():
     COLOR_WHITE = pg.Color('white')
@@ -19,7 +20,7 @@ class GUI():
     SQUARE_COLORS = [pg.Color('gray'), pg.Color('brown')]
     BACKGROUND_COLOR = pg.Color('#8EA2F3')
     
-    def __init__(self, screen_size = 800, text_size = 0):
+    def __init__(self, game = None, screen_size = 800, text_size = 0):
         self.screen_size = screen_size
         self.text_size = text_size
         self.square_size = int(screen_size / 8)
@@ -28,12 +29,16 @@ class GUI():
         self.king_radius2 = int(self.square_size / 4)
         self.move_radius = int(self.piece_radius / 6)
 
+        if game is None:
+            game = Game()
+        self.game = game
+
         # pygame states
         self.screen = None
         self.surface = None
 
         # interaction states
-        self.game = Game()
+        self.game = game
 
         self.selected_pos = None
         self.take_piece = False
@@ -189,10 +194,13 @@ class GUI():
                     if gui_status == GUI_EXIT:
                         running = False
             else:
+                start_time = time.time()
                 policy = policy_white if self.game.current_player == WHITE else policy_black
-                move = policy.get_action(self.game)
+                move, _ = policy.get_action(self.game)
                 game_status = self.game.do_move(move)
                 gui_status = self.read_game_status(game_status)
+                end_time = time.time()
+                print("Step Time for AI:", end_time-start_time, "s")
                 if gui_status == GUI_EXIT:
                     running = False
 
@@ -214,9 +222,53 @@ class GUI():
 
         pg.quit()
 
-if __name__ == "__main__":
-    from mcts_pure import MCTSPlayer as MCTS_Pure
-    gui = GUI()
-    mcts_player = MCTS_Pure(c_puct=5, n_playout=1000)
-    gui.run(player_black=AI_PLAYER, policy_black=mcts_player)
-    # gui.run()
+    def replay(self, replay_game):
+        pg.init()
+        self.screen = pg.display.set_mode((self.screen_size + self.text_size, self.screen_size))
+        self.surface = pg.Surface((self.screen_size + self.text_size, self.screen_size))
+        pg.display.set_caption('DeepDraughts')
+        clock = pg.time.Clock()
+
+        pg.font.init()
+        font = pg.font.Font(None, 36)
+        
+        replay_ptr = 0
+
+        running = True
+        while running:
+            # quering current states for each frame
+            pieces = self.game.current_board.get_pieces()
+            pos_list = [x.pos for x in pieces]
+            player_list = [x.player for x in pieces]
+            isking_list = [x.isking for x in pieces]
+            available_moves = self.game.get_all_available_moves()
+
+            for event in pg.event.get():
+                action, info = self.listen_human_action(event)
+                if action == GUI_EXIT:
+                    running = False
+                elif action == GUI_WAIT:
+                    continue
+                elif action == GUI_RIGHTCLICK:
+                    # TODO withdraw last play
+                    self.game = Game()
+                    replay_ptr = 0
+                elif action == GUI_LEFTCLICK:
+                    game_status = self.game.do_move(replay_game.move_path[replay_ptr][1])
+                    replay_ptr += 1
+                    gui_status = self.read_game_status(game_status)
+                    if gui_status == GUI_EXIT:
+                        running = False
+
+            self.draw_background()
+            self.draw_pieces(pos_list, player_list, isking_list, self.game.current_board.nsize)
+
+            for move in available_moves:
+                pos = move.moves[-1]
+                self.draw_select(pos, self.game.current_board.nsize)
+            
+            self.screen.blit(self.surface, (0, 0))
+            pg.display.flip()
+            clock.tick(500)
+
+        pg.quit()

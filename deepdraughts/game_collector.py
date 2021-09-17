@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-15 16:32:59
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-16 01:27:25
+LastEditTime: 2021-09-17 12:56:27
 Description: 
 '''
 
@@ -10,6 +10,7 @@ from .env.game import Game
 import numpy as np
 import pickle
 from .env.env_utils import *
+import copy
 
 class GameCollector():
     def self_play(self, policy, temp=1e-3):
@@ -58,7 +59,7 @@ class GameCollector():
     
     def parallel_collect_selfplay(self, n_core, policy, batch_size = 1000, temp = 1e-3, filepath = None):
         from  multiprocessing import Pool
-        pool = Pool(n_core) 
+        pool = Pool(n_core)
         pool_results = []
         
         for i in range(batch_size):

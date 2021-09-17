@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:36:26
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-15 00:23:18
+LastEditTime: 2021-09-17 13:12:14
 Description: 
 '''
 
@@ -158,7 +158,6 @@ class Board():
         normal_moves = []
 
         piece = self.pieces[pos]
-        _, col = pos2coord(pos, self.nsize)
         
         # normal piece
         if piece.isking == False:

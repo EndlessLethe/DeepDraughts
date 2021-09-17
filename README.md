@@ -2,7 +2,7 @@
  * @Author: Zeng Siwei
  * @Date: 2021-09-12 00:27:58
  * @LastEditors: Zeng Siwei
- * @LastEditTime: 2021-09-14 23:41:35
+ * @LastEditTime: 2021-09-17 12:51:55
  * @Description: 
 -->
 # DeepDraughts
@@ -45,9 +45,29 @@ The command below can create a game using Brazilian Rule, but following one is n
 game = Game(rule = BRAZILIAN_RULE)
 ```
 
-## Implementation Detail About Rule
+## How to build you own AI player for game you like.
+1. Make sure the game you like has no uncertainty and has two player involved.
+    - Or it will be hard to take MCTS method into practice.
+2. Design your own game env like "deepdraughts/env"
+    - Playing a hundred times is recommended for fixing hidden bugs.
+3. Add pure MCTS as a basic AI
+4. Add AlphaZero-style AI
+    - Implement self-play and data collector with pure MCTS AI
+    - Implement AlphaZero-style AI (AlphaZero MCTS and NN)
+    - Trainning NN with paralleled self-play.
+
+
+## Implementation Details
+The following part is for programmers who's interested in creating an own AI.
+
+### About Rule
 I divide the rule into two parts: state-dependent rules, and state-independent rules.  
 
 For state-dependent rules, they are implemented in class Board get_available_moves(pos). Board object only knows where's pieces and their states. This method will return all available moves following the rule for one given piece.
 
 For state-independent rules as chain-taking and finishing the continuous capture, they are implemented in class Game get_available_moves(pos).
+
+### About Paralleling
+Though paralleling is an effective method to decrease running time in total, it's quite complicated when paralleling meets GPU trainning.  
+
+I only use paralleling for self playing. It's sequential when training network and self play, so that NN args won't be read and write at the same time. In fact, self-play function is the most costly part.

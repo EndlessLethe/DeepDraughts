@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:31:25
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-15 00:13:45
+LastEditTime: 2021-09-17 13:11:10
 Description: 
 '''
 
@@ -128,8 +128,6 @@ def coord2fstr():
     # TODO
     pass
 
-def get_direction(pos_from, pos_to):
-    raise NotImplemented()
 
 def is_opposite_direcion(d1, d2):
     if (d1 == "left_upper" and d2 == "right_lower") or (d2 == "left_upper" and d1 == "right_lower"):
