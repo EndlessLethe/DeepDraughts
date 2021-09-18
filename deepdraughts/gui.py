@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 15:56:20
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-18 01:26:23
+LastEditTime: 2021-09-18 17:07:52
 Description: 
 '''
 
@@ -141,8 +141,6 @@ class GUI():
         return GAME_CONTINUE
     
     def read_game_status(self, status):
-
-        print("game status", status)
         if status == GAME_CONTINUE:
             return GUI_WAIT
         else:

@@ -2,10 +2,11 @@
 Author: Zeng Siwei
 Date: 2021-09-15 23:02:07
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-18 00:31:52
+LastEditTime: 2021-09-19 01:01:48
 Description: 
 '''
 
+from logging import log
 from deepdraughts.gui import GUI
 from deepdraughts.game_collector import GameCollector
 from deepdraughts.mcts_pure import MCTSPlayer as MCTS_Pure
@@ -29,6 +30,7 @@ def test_selfplay():
     end_time = time.time()
     print("Paralleled " + str(20) + " selfplay with " + str(8) + " core:", end_time-start_time, "s")
     # Paralleled 20 selfplay with 8 core: 1189.294320821762 s
+    # Paralleled 20 selfplay with 8 core: 952.8826515674591 s
 
 def test_load_selfplay():
     dir_file = "deepdraughts/savedata/"

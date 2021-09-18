@@ -6,18 +6,53 @@ Tested in PyTorch 0.2.0 and 0.3.0
 @author: Junxiao Song
 """
 
+
+'''
+    # The code is mainly contributed by Junxiao Song.
+    # The github link is: https://github.com/junxiaosong/AlphaZero_Gomoku/blob/master/mcts_pure.py
+    #
+    # Code is modified by EndlessLethe for further use.
+'''
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
-
+import os
 
 def set_learning_rate(optimizer, lr):
     """Sets the learning rate to the given value"""
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
+
+
+def _initialize_weights(self):
+    for m in self.modules():
+        if isinstance(m, nn.Linear):
+            weight = (param.data for name, param in m.named_parameters() if "weight" in name)
+            for w in weight:
+                torch.nn.init.xavier_uniform_(m.weight)
+
+        if isinstance(m, torch.nn.LSTM):
+            ih = (param.data for name, param in self.named_parameters() if 'weight_ih' in name)
+            hh = (param.data for name, param in self.named_parameters() if 'weight_hh' in name)
+            for w in ih:
+                nn.init.xavier_uniform(w)
+            for w in hh:
+                nn.init.orthogonal(w)
+
+        if isinstance(m, torch.nn.Conv2d):
+            weight = (param.data for name, param in m.named_parameters() if "weight" in name)
+            for w in weight:
+                torch.nn.init.xavier_uniform_(m.weight)
+
+        # b = (param.data for name, param in self.named_parameters() if 'bias' in name)
+        # for w in b:
+        #     nn.init.constant(w, 0)
+
+    print(self.__class__.__name__ + ":\n" + str(list(self.modules())[0]))
 
 
 class PolicyValueNet(nn.Module):
@@ -50,6 +85,8 @@ class PolicyValueNet(nn.Module):
         self.val_conv1 = nn.Conv2d(128, 2, kernel_size=1)
         self.val_fc1 = nn.Linear(2*nsize*nsize+64, 64)
         self.val_fc2 = nn.Linear(64, 1)
+
+        _initialize_weights(self)
 
     def forward(self, vec_board, vec_state):
         if len(vec_board.shape) == 3:
@@ -86,41 +123,27 @@ class PolicyValueNet(nn.Module):
 
 class Model():
     """policy-value network """
-    def __init__(self, nsize, n_states, n_actions, MOVE_MAP, 
-                 model_file=None, use_gpu=False):
-        self.use_gpu = use_gpu
+    def __init__(self, nsize, n_states, n_actions, MOVE_MAP, name = "default", 
+                use_gpu = False, l2_const = 1e-4):
+        self.nsize = nsize
+        self.n_states = n_states
+        self.n_actions = n_actions
         self.board_width = nsize
         self.board_height = nsize
         self.MOVE_MAP = MOVE_MAP
 
-        self.l2_const = 1e-4  # coef of l2 penalty
-        # the policy value net module
+        self.name = name
+        self.checkpoint_n_epoch = None
+        self.use_gpu = use_gpu
+        self.l2_const = l2_const
+
+        self.policy_value_net = PolicyValueNet(nsize, n_states, n_actions)
         if self.use_gpu:
-            self.policy_value_net = PolicyValueNet(nsize, n_states, n_actions).cuda()
-        else:
-            self.policy_value_net = PolicyValueNet(nsize, n_states, n_actions)
+            self.policy_value_net = self.policy_value_net.cuda()
+
         self.optimizer = optim.Adam(self.policy_value_net.parameters(),
                                     weight_decay=self.l2_const)
 
-        if model_file:
-            net_params = torch.load(model_file)
-            self.policy_value_net.load_state_dict(net_params)
-
-    def policy_value_batch(self, state_batch):
-        """
-        input: a batch of states
-        output: a batch of action probabilities and state values
-        """
-        if self.use_gpu:
-            state_batch = Variable(torch.FloatTensor(state_batch).cuda())
-            log_act_probs, value = self.policy_value_net(state_batch)
-            act_probs = np.exp(log_act_probs.data.cpu().numpy())
-            return act_probs, value.data.cpu().numpy()
-        else:
-            state_batch = Variable(torch.FloatTensor(state_batch))
-            log_act_probs, value = self.policy_value_net(state_batch)
-            act_probs = np.exp(log_act_probs.data.numpy())
-            return act_probs, value.data.numpy()
 
     def policy_value_fn(self, state):
         """
@@ -145,29 +168,60 @@ class Model():
         value = value.data[0][0]
         return act_probs, value
 
-    def train_step(self, state_batch, mcts_probs, winner_batch, lr):
-        """perform a training step"""
-        # wrap in Variable
-        if self.use_gpu:
-            state_batch = Variable(torch.FloatTensor(state_batch).cuda())
-            mcts_probs = Variable(torch.FloatTensor(mcts_probs).cuda())
-            winner_batch = Variable(torch.FloatTensor(winner_batch).cuda())
-        else:
-            state_batch = Variable(torch.FloatTensor(state_batch))
-            mcts_probs = Variable(torch.FloatTensor(mcts_probs))
-            winner_batch = Variable(torch.FloatTensor(winner_batch))
+    def policy_value_batch(self, state_batch):
+        """
+        input: a batch of states
+        output: a batch of action probabilities and state values
+        """
+        vec_board_batch, vec_state_batch = state_batch
+        vec_board_batch = torch.from_numpy(vec_board_batch).float()
+        vec_state_batch = torch.from_numpy(vec_state_batch).float()
 
+        if self.use_gpu:
+            vec_board_batch = vec_board_batch.cuda()
+            vec_state_batch = vec_state_batch.cuda()
+            log_act_probs, value = self.policy_value_net(vec_board_batch, vec_state_batch)
+            act_probs = np.exp(log_act_probs.data.cpu().numpy())
+            return act_probs, value.data.cpu().numpy()
+        else:
+            log_act_probs, value = self.policy_value_net(vec_board_batch, vec_state_batch)
+            act_probs = np.exp(log_act_probs.data.numpy())
+            return act_probs, value.data.numpy()
+
+
+    def train_step(self, state_batch, mcts_probs_batch, policy_grad_batch, lr):
+        """perform a training step"""
+        vec_board_batch, vec_state_batch = state_batch
+        vec_board_batch = torch.from_numpy(vec_board_batch).float()
+        vec_state_batch = torch.from_numpy(vec_state_batch).float()
+        mcts_probs_batch = torch.from_numpy(mcts_probs_batch).float()
+        policy_grad_batch = torch.from_numpy(policy_grad_batch).float()
+
+        print(vec_board_batch.shape)
+        print(vec_state_batch.shape)
+        print(mcts_probs_batch.shape)
+        print(policy_grad_batch.shape)
+
+        if self.use_gpu:
+            vec_board_batch = vec_board_batch.cuda()
+            vec_state_batch = vec_state_batch.cuda()
+            mcts_probs_batch = mcts_probs_batch.cuda()
+            policy_grad_batch = policy_grad_batch.cuda()
+            
         # zero the parameter gradients
         self.optimizer.zero_grad()
         # set learning rate
         set_learning_rate(self.optimizer, lr)
 
         # forward
-        log_act_probs, value = self.policy_value_net(state_batch)
+        log_act_probs, value = self.policy_value_net(vec_board_batch, vec_state_batch)
+        print(log_act_probs.shape)
+        print(value.shape)
+
         # define the loss = (z - v)^2 - pi^T * log(p) + c||theta||^2
         # Note: the L2 penalty is incorporated in optimizer
-        value_loss = F.mse_loss(value.view(-1), winner_batch)
-        policy_loss = -torch.mean(torch.sum(mcts_probs*log_act_probs, 1))
+        value_loss = F.mse_loss(value.view(-1), policy_grad_batch)
+        policy_loss = -torch.mean(torch.sum(mcts_probs_batch*log_act_probs, 1))
         loss = value_loss + policy_loss
         # backward and optimize
         loss.backward()
@@ -180,11 +234,42 @@ class Model():
         #for pytorch version >= 0.5 please use the following line instead.
         #return loss.item(), entropy.item()
 
-    def get_policy_param(self):
-        net_params = self.policy_value_net.state_dict()
-        return net_params
-
-    def save_model(self, model_file):
+    def save(self, checkpoint_dir, epoch):
         """ save model params to file """
-        net_params = self.get_policy_param()  # get model params
-        torch.save(net_params, model_file)
+
+        torch.save({
+                    'nsize': self.nsize,
+                    'n_states': self.n_states, 
+                    'n_actions': self.n_actions, 
+                    'MOVE_MAP': self.MOVE_MAP, 
+                    'name': self.name, 
+                    'n_epoch': epoch, 
+                    'use_gpu': self.use_gpu, 
+                    'l2_const': self.l2_const, 
+
+                    'model': self.policy_value_net.state_dict(),
+                    'optimizer': self.optimizer.state_dict(),
+                    },
+                            os.path.join(checkpoint_dir, self.name+'_{}.pth.tar'.format(epoch)))
+
+    @classmethod
+    def load_checkpoint(self, model_file):
+        model_params = torch.load(model_file)
+
+        nsize = model_params['nsize']
+        n_states = model_params['n_states']
+        n_actions = model_params['n_actions']
+        MOVE_MAP = model_params['MOVE_MAP']
+
+        name = model_params['name']
+        checkpoint_n_epoch = model_params['n_epoch']
+        use_gpu = model_params['use_gpu']
+        l2_const = model_params['l2_const']
+
+        model = Model(nsize, n_states, n_actions, MOVE_MAP, name, use_gpu, l2_const)
+        model.checkpoint_n_epoch = checkpoint_n_epoch
+        model.policy_value_net.load_state_dict(model_params['model'])
+        model.optimizer.load_state_dict(model_params['optimizer'])
+        return model
+        
+

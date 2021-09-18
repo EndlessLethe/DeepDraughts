@@ -55,7 +55,8 @@ game = Game(rule = BRAZILIAN_RULE)
     - Implement AlphaZero-style AI (AlphaZero MCTS and untrained NN).
     - Running GUI to test.
     - Implement self-play and data collector with AlphaZero MCTS.
-    - Trainning NN with paralleled self-play.
+    - Trainning NN with self-play.
+    - Make self-play paralleled.
 
 
 ## Implementation Details

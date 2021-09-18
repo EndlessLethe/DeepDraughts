@@ -2,18 +2,21 @@
 Author: Zeng Siwei
 Date: 2021-09-15 16:32:59
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-18 00:04:35
+LastEditTime: 2021-09-19 00:44:29
 Description: 
 '''
 
-from .env.game import Game
+
 import numpy as np
 import pickle
-from .env.env_utils import *
 import copy
 
+from .env.game import Game
+from .env.env_utils import *
+
 class GameCollector():
-    def self_play(self, policy, temp=1e-3, game=None):
+    @classmethod
+    def self_play(cls, policy, temp=1e-3, game=None):
         """ start a self-play game using a MCTS player, reuse the search tree,
         and store the self-play data: (state, mcts_probs, z) for training
         """
@@ -36,7 +39,7 @@ class GameCollector():
 
         policy_grad = np.zeros(len(current_players))
         if winner is not None:
-            print("Game over.", "WHITE" if winner == WHITE else "BLACK", "wins")
+            print("Game over." + "WHITE" if winner == WHITE else "BLACK" + "wins")
 
             # winner from the perspective of the current player of each state
             current_players = np.array(current_players)
@@ -50,31 +53,32 @@ class GameCollector():
             
         return winner, states, mcts_probs, policy_grad
 
-    def collect_selfplay(self, policy, batch_size = 1000, temp = 1e-3, filepath = None, game = None):
+    @classmethod
+    def collect_selfplay(cls, policy, batch_size = 1000, temp = 1e-3, filepath = None, game = None):
         selfplay_data = []
         for i in range(batch_size):
-            selfplay_data.append(self.self_play(policy, temp))
+            selfplay_data.append(cls.self_play(policy, temp))
         if filepath:
-            self.dump_selfplay(selfplay_data, filepath)
+            cls.dump_selfplay(selfplay_data, filepath)
         return selfplay_data
     
-    def parallel_collect_selfplay(self, n_core, policy, batch_size = 1000, temp = 1e-3, filepath = None, game = None):
-        from  multiprocessing import Pool
+    @classmethod
+    def parallel_collect_selfplay(cls, n_core, policy, batch_size = 1000, temp = 1e-3, filepath = None, game = None):
+        from multiprocessing import Pool
         pool = Pool(n_core)
         pool_results = []
         
         for i in range(batch_size):
-            result = pool.apply_async(self.self_play, (policy, temp))
+            result = pool.apply_async(cls.self_play, (policy, temp))
             pool_results.append(result)
         pool.close() 
         pool.join()
 
         selfplay_data = [x.get() for x in pool_results]
         if filepath:
-            self.dump_selfplay(selfplay_data, filepath)
+            cls.dump_selfplay(selfplay_data, filepath)
         return selfplay_data
             
-
     @classmethod
     def load_selfplay(cls, filepath):
         with open(filepath, "rb") as fp:

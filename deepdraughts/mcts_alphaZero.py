@@ -82,7 +82,7 @@ class MCTSPlayer_AlphaZero(MCTSPlayer):
                 self.mcts.update_with_move(-1)
 #                location = board.move_to_location(move)
 #                print("AI move: %d,%d\n" % (location[0], location[1]))
-            print(move_probs)
+            # print(move_probs)
             return move, move_probs
     
         elif len(sensible_moves) == 1:
