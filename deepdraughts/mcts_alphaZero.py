@@ -54,20 +54,21 @@ class MCTSPlayer_AlphaZero(MCTSPlayer):
     """AI player based on modified MCTS by AlphaZero"""
 
     def __init__(self, policy_value_function,
-                 c_puct=5, n_playout=2000, inference=False):
+                 c_puct=5, n_playout=2000, selfplay=False):
         self.mcts = MCTS_AlphaZero(policy_value_function, c_puct, n_playout)
-        self.inference = inference
-
+        self.selfplay = selfplay
 
     def get_action(self, game, temp=1e-3):
         sensible_moves = game.get_all_available_moves()
         # the pi vector returned by MCTS as in the alphaGo Zero paper
-        if len(sensible_moves) > 0:
+        if len(sensible_moves) >= 2:
             acts, probs = self.mcts.get_move(game, temp)
+            # print("acts", [str(x) for x in acts])
+            # print("probs", probs)
             move_probs = actions2vec(acts, probs)
-            if not self.inference:
-                # add Dirichlet Noise for exploration (needed for
-                # self-play training)
+            if self.selfplay:
+                # add Dirichlet Noise for exploration
+                # reuse MCST
                 move = np.random.choice(
                     acts,
                     p=0.75*probs + 0.25*np.random.dirichlet(0.3*np.ones(len(probs)))
@@ -80,12 +81,10 @@ class MCTSPlayer_AlphaZero(MCTSPlayer):
                 move = np.random.choice(acts, p=probs)
                 # reset the root node
                 self.mcts.update_with_move(-1)
-#                location = board.move_to_location(move)
-#                print("AI move: %d,%d\n" % (location[0], location[1]))
-            # print(move_probs)
             return move, move_probs
     
         elif len(sensible_moves) == 1:
-            return sensible_moves[0], 1
+            self.mcts.update_with_move(-1)
+            return sensible_moves[0], actions2vec(sensible_moves, [1])
         else:
             print("WARNING: the board is full")

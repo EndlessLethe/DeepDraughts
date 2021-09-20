@@ -224,7 +224,7 @@ class MCTSPlayer(object):
     def reset(self):
         self.mcts.update_with_move(-1)
 
-    def get_action(self, game):
+    def get_action(self, game, temp=None):
         '''
         Args: 
             game: Current game states.

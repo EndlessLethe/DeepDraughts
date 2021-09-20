@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-15 16:32:59
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-19 00:44:29
+LastEditTime: 2021-09-20 19:58:59
 Description: 
 '''
 
@@ -25,8 +25,7 @@ class GameCollector():
             game = Game()
         states, mcts_probs, current_players = [], [], []
         while True:
-            # move, move_probs = policy.get_action(game, temp=temp)
-            move, move_probs = policy.get_action(game)
+            move, move_probs = policy.get_action(game, temp=temp)
             # store the data
             states.append(copy.deepcopy(game))
             mcts_probs.append(move_probs)

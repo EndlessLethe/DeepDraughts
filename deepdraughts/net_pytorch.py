@@ -197,11 +197,6 @@ class Model():
         mcts_probs_batch = torch.from_numpy(mcts_probs_batch).float()
         policy_grad_batch = torch.from_numpy(policy_grad_batch).float()
 
-        print(vec_board_batch.shape)
-        print(vec_state_batch.shape)
-        print(mcts_probs_batch.shape)
-        print(policy_grad_batch.shape)
-
         if self.use_gpu:
             vec_board_batch = vec_board_batch.cuda()
             vec_state_batch = vec_state_batch.cuda()
@@ -215,8 +210,6 @@ class Model():
 
         # forward
         log_act_probs, value = self.policy_value_net(vec_board_batch, vec_state_batch)
-        print(log_act_probs.shape)
-        print(value.shape)
 
         # define the loss = (z - v)^2 - pi^T * log(p) + c||theta||^2
         # Note: the L2 penalty is incorporated in optimizer
@@ -230,13 +223,14 @@ class Model():
         entropy = -torch.mean(
                 torch.sum(torch.exp(log_act_probs) * log_act_probs, 1)
                 )
-        return loss.data[0], entropy.data[0]
-        #for pytorch version >= 0.5 please use the following line instead.
-        #return loss.item(), entropy.item()
+        return loss.item(), entropy.item()
 
-    def save(self, checkpoint_dir, epoch):
+    def save(self, checkpoint_dir, epoch, is_best=False):
         """ save model params to file """
-
+        if is_best:
+            savepath = os.path.join(checkpoint_dir, self.name+'_{}_best.pth.tar'.format(epoch))
+        else:
+            savepath = os.path.join(checkpoint_dir, self.name+'_{}.pth.tar'.format(epoch))
         torch.save({
                     'nsize': self.nsize,
                     'n_states': self.n_states, 
@@ -250,7 +244,7 @@ class Model():
                     'model': self.policy_value_net.state_dict(),
                     'optimizer': self.optimizer.state_dict(),
                     },
-                            os.path.join(checkpoint_dir, self.name+'_{}.pth.tar'.format(epoch)))
+                    savepath)
 
     @classmethod
     def load_checkpoint(self, model_file):
