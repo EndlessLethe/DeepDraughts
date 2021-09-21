@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-15 23:02:07
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-20 15:02:52
+LastEditTime: 2021-09-22 01:46:34
 Description: 
 '''
 
@@ -38,17 +38,18 @@ def test_pure_mcts_selfplay(filename):
 
 def test_alphazero_selfplay(filename):
     dir_file = "deepdraughts/savedata/"
-    batch_size = 2
+    batch_size = 1
 
     gc = GameCollector()
     model = Model(N_SIZE_8, N_STATE_64, N_ACTION_64, MOVE_MAP_64)
-    mcts_player = MCTS_AlphaZero(model.policy_value_fn, c_puct=5, n_playout=1000, inference=True)
+    mcts_player = MCTS_AlphaZero(model.policy_value_fn, c_puct=5, n_playout=1000, selfplay=True)
 
     start_time = time.time()
     gc.collect_selfplay(mcts_player, batch_size, filepath= dir_file + filename + ".pkl")
     end_time = time.time()
     print("Non parallel " + str(batch_size) + " selfplay:", end_time-start_time, "s")
     # Non parallel 2 selfplay: 922.9081609249115 s
+    # Non parallel 1 selfplay: 486.6477029323578 s
 
 def test_load_selfplay():
     dir_file = "deepdraughts/savedata/"

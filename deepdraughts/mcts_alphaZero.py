@@ -19,7 +19,6 @@ from .mcts_pure import TreeNode, MCTS, MCTSPlayer
 import numpy as np
 import copy
 
-
 def softmax(x):
     probs = np.exp(x - np.max(x))
     probs /= np.sum(probs)
@@ -31,6 +30,46 @@ class MCTS_AlphaZero(MCTS):
 
     def __init__(self, policy_value_fn, c_puct=5, n_playout=10000):
         super().__init__(policy_value_fn, c_puct, n_playout)
+
+    def _playout(self, state):
+        """Run a single playout from the root to the leaf, getting a value at
+        the leaf and propagating it back through its parents.
+        State is modified in-place, so a copy must be provided.
+        """
+        node = self._root
+        list_node = [node]
+        list_player = [state.current_player]
+        while(1):
+            if node.is_leaf():
+                break
+            # Greedily select next move.
+            action, node = node.select(self._c_puct)
+            state.do_move(action)
+            list_node.append(node)
+            list_player.append(state.current_player)
+
+        # Evaluate the leaf using a network which outputs a list of
+        # (action, probability) tuples p and also a score v in [-1, 1]
+        # for the current player.
+        action_probs, leaf_value = self._policy(state)
+
+        # Check for end of game.
+        is_over, winner = state.is_over()
+        if not is_over:
+            node.expand(action_probs)
+
+        # using leaf_value from the network
+        # only modified leaf_value when game is over with 1 or -1
+        current_player = state.current_player
+        if is_over:
+            if winner is None:
+                leaf_value = 0
+            else:
+                leaf_value = 1.0 if winner == current_player else -1.0
+
+        # Update value and visit count of nodes in this traversal.
+        for node, player in zip(list_node, list_player):
+            node.update(-leaf_value if player == current_player else leaf_value)
 
     def get_move(self, state, temp=1e-3):
         """Run all playouts sequentially and return the available actions and

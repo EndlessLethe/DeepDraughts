@@ -2,12 +2,11 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:31:25
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-18 01:32:54
+LastEditTime: 2021-09-22 01:47:06
 Description: 
 '''
 
 import numpy as np
-from numpy.lib.index_tricks import nd_grid
 
 # Basic code
 # For training AI, use 1 and -1
@@ -66,10 +65,6 @@ VALID_POS_100 = set([])
 
 EDGE_POS_64 = set([9, 25, 41, 57, 8, 24, 40, 56])
 EDGE_POS_100 = set([])
-
-POS_MAP_64 = {
-    
-}
 
 ASCII_LOWER_A = 48
 
@@ -209,10 +204,17 @@ def coord2fstr():
     Vectorization function.          
 '''
 
+def action2id(action):
+    return MOVE_MAP_64[(action.pos[-2], action.pos[-1])]
+
 def actions2vec(actions, probs):
+    action_ids = [action2id(action) for action in actions]
+    return _actions2vec(action_ids, probs)
+    
+def _actions2vec(action_ids, probs):
     vec = np.zeros(N_ACTION_64)
-    for action, prob in zip(actions, probs):
-        vec[MOVE_MAP_64[(action.pos[-2], action.pos[-1])]] = prob
+    for action, prob in zip(action_ids, probs):
+        vec[action] = prob
     return vec
 
 N_STATE_64 = N_SIZE_8 * 2 + 3
@@ -253,8 +255,3 @@ def state2vec(state):
         vec_state[i+2] = move.taken_pos-1
     vec_state[-1] = state.n_king_move
     return vec_board, vec_state
-
-if __name__ == "__main__":
-    a = "0"
-    a = ord(a)
-    print(a)
