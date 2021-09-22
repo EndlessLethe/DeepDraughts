@@ -159,13 +159,14 @@ class Model():
                     torch.from_numpy(vec_board).cuda().float(), 
                     torch.from_numpy(vec_state).cuda().float())
             act_probs = np.exp(log_act_probs.data.cpu().numpy().flatten())
+            value = value.data[0][0].cpu()
         else:
             log_act_probs, value = self.policy_value_net(
                     torch.from_numpy(vec_board).float(),
                     torch.from_numpy(vec_state).float())
             act_probs = np.exp(log_act_probs.data.numpy().flatten())
+            value = value.data[0][0]
         act_probs = zip(legal_positions, act_probs[legal_position_ids])
-        value = value.data[0][0]
         return act_probs, value
 
     def policy_value_batch(self, state_batch):

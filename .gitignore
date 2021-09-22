@@ -6,6 +6,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+!cython_env.cp36-win_amd64.pyd
+
 # C extensions
 *.so
 

@@ -13,7 +13,7 @@ network to guide the tree search and evaluate the leaf nodes
     # Code is modified by EndlessLethe for further use.
 '''
 
-from .env.env_utils import actions2vec
+from .env import *
 from .mcts_pure import TreeNode, MCTS, MCTSPlayer
 
 import numpy as np

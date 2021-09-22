@@ -2,14 +2,13 @@
 Author: Zeng Siwei
 Date: 2021-09-11 15:56:20
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-18 17:07:52
+LastEditTime: 2021-09-22 15:03:19
 Description: 
 '''
 
 import pygame as pg
-from .env.game import Game
-from .env.env_utils import *
 import time
+from .env import *
 
 class GUI():
     COLOR_WHITE = pg.Color('white')

@@ -10,8 +10,7 @@ import random
 import numpy as np
 from collections import defaultdict
 
-from .env.env_utils import WHITE, BLACK
-from .env.game import Game
+from .env import *
 from .mcts_pure import MCTSPlayer as MCTS_Pure
 from .mcts_alphaZero import MCTSPlayer_AlphaZero as MCTS_AlphaZero
 from .game_collector import GameCollector

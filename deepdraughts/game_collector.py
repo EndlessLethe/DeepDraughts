@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-15 16:32:59
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-20 19:58:59
+LastEditTime: 2021-09-23 01:36:59
 Description: 
 '''
 
@@ -11,8 +11,7 @@ import numpy as np
 import pickle
 import copy
 
-from .env.game import Game
-from .env.env_utils import *
+from .env import *
 
 class GameCollector():
     @classmethod
@@ -62,9 +61,9 @@ class GameCollector():
         return selfplay_data
     
     @classmethod
-    def parallel_collect_selfplay(cls, n_core, policy, batch_size = 1000, temp = 1e-3, filepath = None, game = None):
-        from multiprocessing import Pool
-        pool = Pool(n_core)
+    def parallel_collect_selfplay(cls, n_cores, policy, batch_size = 1000, temp = 1e-3, filepath = None, game = None):
+        from torch.multiprocessing import Pool
+        pool = Pool(n_cores)
         pool_results = []
         
         for i in range(batch_size):
