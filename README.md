@@ -55,7 +55,7 @@ game = Game(rule = BRAZILIAN_RULE)
     - Implement AlphaZero-style AI (AlphaZero MCTS and untrained NN).
     - Running GUI to test.
     - Implement self-play and data collector with AlphaZero MCTS.
-    - Trainning NN with self-play.
+    - Training NN with self-play.
     - Make self-play paralleled.
 
 
@@ -70,6 +70,6 @@ For state-dependent rules, they are implemented in class Board get_available_mov
 For state-independent rules as chain-taking and finishing the continuous capture, they are implemented in class Game get_available_moves(pos).
 
 ### About Paralleling
-Though paralleling is an effective method to decrease running time in total, it's quite complicated when paralleling meets GPU trainning.  
+Though paralleling is an effective method to decrease running time in total, it's quite complicated when paralleling meets GPU training.  
 
 I only use paralleling for self playing. It's sequential when training network and self play, so that NN args won't be read and write at the same time. In fact, self-play function is the most costly part.

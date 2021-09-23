@@ -30,13 +30,13 @@ def test_state2vec():
 
 def test_init_model():
     gui = GUI()
-    model = Model(N_SIZE_8, N_STATE_64, N_ACTION_64, MOVE_MAP_64)
+    model = Model(CONST_N_SIZE_8, N_STATE_64, N_ACTION_64, MOVE_MAP_64)
     mcts_player = MCTS_AlphaZero(model.policy_value_fn, c_puct=5, n_playout=1000, inference=True)
     gui.run(player_black=AI_PLAYER, policy_black=mcts_player)
 
 def test_save_model():
     checkpoint_dir = "deepdraughts/savedata/"
-    model = Model(N_SIZE_8, N_STATE_64, N_ACTION_64, MOVE_MAP_64, name = "test")
+    model = Model(CONST_N_SIZE_8, N_STATE_64, N_ACTION_64, MOVE_MAP_64, name = "test")
     model.save(checkpoint_dir, 0)
 
 def test_load_model():

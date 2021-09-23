@@ -10,19 +10,17 @@ import random
 import numpy as np
 from collections import defaultdict
 
-from .env import *
-from .mcts_pure import MCTSPlayer as MCTS_Pure
-from .mcts_alphaZero import MCTSPlayer_AlphaZero as MCTS_AlphaZero
+from .mcts_pure import MCTSPlayer as MCTS_pure
+from .mcts_alphazero import MCTSPlayer_alphazero as MCTS_alphazero
 from .game_collector import GameCollector
 
 class TrainPipeline():
-    def __init__(self, model, dir_save, game_args = dict()):
-        # fixed training params
+    def __init__(self, model, dir_save, training_, game_args = dict()):
         self.learn_rate = 2e-3
         self.lr_multiplier = 1.0  # adaptively adjust the learning rate based on KL
         self.temp = 1e-3  # the temperature param
         self.n_playout = 1600  # num of simulations for each move
-        self.pure_mcts_playout_num = 10000 # num of pure MCTS eval simulations
+        self.n_playout_pure_mcts = 10000 # num of pure MCTS eval simulations
         self.c_puct = 5
         self.epochs = 5  # num of train_steps for each update
         self.kl_targ = 0.02
@@ -30,27 +28,27 @@ class TrainPipeline():
         self.best_win_ratio = 0.0
         self.game_batch_num = 2
         self.batch_size = 1  # mini-batch size for training
-        # num of simulations used for the pure mcts, which is used as
-        # the opponent to evaluate the trained policy
+        self.n_cores = 8 # number of cores for
         
         self.game_args = game_args
         self.game = Game(**game_args)
-        self.policy_value_net = model
+        self.model = model
         self.dir_save = dir_save
         self.name = model.name
         self.game_collector = GameCollector()
         self.n_epoch = 0
     
-        self.mcts_player = MCTS_AlphaZero(self.policy_value_net.policy_value_fn,
+        self.mcts_player = MCTS_alphazero(self.model.policy_value_fn,
                                       c_puct=self.c_puct,
                                       n_playout=self.n_playout,
                                       selfplay=True)
 
 
     def train(self):
-        plays = self.game_collector.collect_selfplay(self.mcts_player, batch_size = self.batch_size, 
-                        temp=self.temp, filepath = self.dir_save+self.name+"_gamebatch"+str(self.n_epoch) + ".pkl")
-        # plays = self.game_collector.load_selfplay(self.dir_save + "test_selfplay2.pkl")
+        filepath = self.dir_save+self.name+"_gamebatch"+str(self.n_epoch) + ".pkl"
+        plays = self.game_collector.parallel_collect_selfplay(n_cores = self.n_cores, 
+                shared_model = self.model.policy_value_net, policy = self.mcts_player, batch_size = self.batch_size, filepath = filepath)
+        
         _, state_batch_tmp, mcts_probs_batch_tmp, policy_grad_batch = zip(*plays)
         state_batch = []
         mcts_probs_batch = []
@@ -68,14 +66,14 @@ class TrainPipeline():
         vec_state_batch = np.stack((x[1] for x in vectors), axis=0)
         state_batch = (vec_board_batch, vec_state_batch)
 
-        old_probs, old_v = self.policy_value_net.policy_value_batch(state_batch)
+        old_probs, old_v = self.model.policy_value_batch(state_batch)
         for i in range(self.epochs):
-            loss, entropy = self.policy_value_net.train_step(
+            loss, entropy = self.model.train_step(
                     state_batch,
                     mcts_probs_batch,
                     policy_grad_batch,
                     self.learn_rate*self.lr_multiplier)
-            new_probs, new_v = self.policy_value_net.policy_value_batch(state_batch)
+            new_probs, new_v = self.model.policy_value_batch(state_batch)
             kl = np.mean(np.sum(old_probs * (
                     np.log(old_probs + 1e-10) - np.log(new_probs + 1e-10)),
                     axis=1)
@@ -113,18 +111,19 @@ class TrainPipeline():
         Evaluate the trained policy by playing against the pure MCTS player
         Note: this is only for monitoring the progress of training
         """
-        current_mcts_player = MCTS_AlphaZero(self.policy_value_net.policy_value_fn,
+        current_mcts_player = MCTS_alphazero(self.model.policy_value_fn,
                                          c_puct=self.c_puct,
                                          n_playout=self.n_playout,
                                          selfplay=False)
-        pure_mcts_player = MCTS_Pure(c_puct=self.c_puct,
-                                     n_playout=self.pure_mcts_playout_num)
+        pure_mcts_player = MCTS_pure(c_puct=self.c_puct,
+                                     n_playout=self.n_playout_pure_mcts)
         alphazero_cnt, pure_cnt, draw_cnt = 0, 0, 0
         for i in range(n_games):
             print("Eval: game", (i+1))
             game = Game(self.game_args)
             white_player = current_mcts_player if i % 2 else pure_mcts_player
             black_player = pure_mcts_player if i % 2 else current_mcts_player
+            WHITE = game.current_player
             while True:
                 is_over, winner = game.is_over()
                 if is_over:
@@ -135,9 +134,9 @@ class TrainPipeline():
                 game.do_move(move)
             if winner is None:
                 draw_cnt += 1
-            elif (winner == WHITE and white_player is current_mcts_player) or (winner == BLACK and black_player is current_mcts_player):
+            elif (winner == WHITE and white_player is current_mcts_player) or (winner != WHITE and black_player is current_mcts_player):
                 alphazero_cnt += 1
-            elif (winner == WHITE and white_player is pure_mcts_player) or (winner == BLACK and black_player is pure_mcts_player):
+            elif (winner == WHITE and white_player is pure_mcts_player) or (winner != WHITE and black_player is pure_mcts_player):
                 pure_cnt += 1
                 
         win_ratio = 1.0*(alphazero_cnt + 0.5*draw_cnt) / n_games
@@ -157,12 +156,12 @@ class TrainPipeline():
                 if (i+1) % self.check_freq == 0:
                     print("current self-play batch: {}".format(i+1))
                     win_ratio = self.policy_evaluate()
-                    self.policy_value_net.save_model(self.dir_save, self.n_epoch)
+                    self.model.save_model(self.dir_save, self.n_epoch)
                     if win_ratio > self.best_win_ratio:
                         print("New best policy!!!!!!!!")
                         self.best_win_ratio = win_ratio
                         # update the best_policy
-                        self.policy_value_net.save_model(self.dir_save, self.n_epoch, is_best=True)
+                        self.model.save_model(self.dir_save, self.n_epoch, is_best=True)
                         if (self.best_win_ratio == 1.0 and
                                 self.pure_mcts_playout_num < 5000):
                             self.pure_mcts_playout_num += 1000

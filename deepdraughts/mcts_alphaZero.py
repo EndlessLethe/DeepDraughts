@@ -13,9 +13,7 @@ network to guide the tree search and evaluate the leaf nodes
     # Code is modified by EndlessLethe for further use.
 '''
 
-from .env import *
 from .mcts_pure import TreeNode, MCTS, MCTSPlayer
-
 import numpy as np
 import copy
 
@@ -25,7 +23,7 @@ def softmax(x):
     return probs
 
 
-class MCTS_AlphaZero(MCTS):
+class MCTS_alphazero(MCTS):
     """An implementation of the modified Monte Carlo Tree Search by AlphaZero."""
 
     def __init__(self, policy_value_fn, c_puct=5, n_playout=10000):
@@ -89,12 +87,12 @@ class MCTS_AlphaZero(MCTS):
 
         return acts, act_probs
 
-class MCTSPlayer_AlphaZero(MCTSPlayer):
+class MCTSPlayer_alphazero(MCTSPlayer):
     """AI player based on modified MCTS by AlphaZero"""
 
     def __init__(self, policy_value_function,
                  c_puct=5, n_playout=2000, selfplay=False):
-        self.mcts = MCTS_AlphaZero(policy_value_function, c_puct, n_playout)
+        self.mcts = MCTS_alphazero(policy_value_function, c_puct, n_playout)
         self.selfplay = selfplay
 
     def get_action(self, game, temp=1e-3):

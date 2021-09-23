@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:36:26
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-18 01:23:17
+LastEditTime: 2021-09-23 19:24:47
 Description: 
 '''
 
@@ -10,7 +10,7 @@ from .env_utils import *
 from .piece import Piece
 
 class Board():
-    def __init__(self, ngrid = N_GRID_64, rule = RUSSIAN_RULE) -> None:
+    def __init__(self, ngrid = CONST_N_GRID_64, rule = RUSSIAN_RULE) -> None:
         self.pieces = dict() # key - value: pos - piece
         self.ngrid = ngrid
         self.rule = rule
@@ -25,24 +25,6 @@ class Board():
             raise Exception("N_grid is not squre number.")
         self.nsize = n
         
-
-    '''
-    Load gloval vars
-    '''    
-
-    def get_king_promotion_pos(self):
-        return globals()["KING_POS_WHITE_" + str(self.ngrid)], globals()["KING_POS_BLACK_" + str(self.ngrid)]
-
-
-    def get_default_pos(self):
-        return globals()["DEFAULT_POS_WHITE_" + str(self.ngrid)], globals()["DEFAULT_POS_BLACK_" + str(self.ngrid)]
-
-    def get_edge_pos(self):
-        return globals()["EDGE_POS_" + str(self.ngrid)]
-
-    def get_valid_pos(self):
-        return globals()["VALID_POS_" + str(self.ngrid)]
-
     '''
     Update board
     '''    
@@ -63,9 +45,9 @@ class Board():
             blacks_isking = [False] * len(blacks_pos)
 
         for pos, isking in zip(whites_pos, whites_isking):
-            self.pieces[pos] = Piece(WHITE, pos, isking, *self.get_king_promotion_pos())
+            self.pieces[pos] = Piece(WHITE, pos, isking, *KING_PROMOTION_POS())
         for pos, isking in zip(blacks_pos, blacks_isking):
-            self.pieces[pos] = Piece(BLACK, pos, isking, *self.get_king_promotion_pos())
+            self.pieces[pos] = Piece(BLACK, pos, isking, *KING_PROMOTION_POS())
         self.reset_available_moves()
 
     def init_empty_board(self):
@@ -73,12 +55,12 @@ class Board():
         self.reset_available_moves()
 
     def init_default_board(self):
-        self.set_board(*self.get_default_pos())
+        self.set_board(*DEFAULT_POS())
 
     def check_pos_list(self, pos_list):
         is_ok = True
         for pos in pos_list:
-            if pos not in globals()["VALID_POS_" + str(self.ngrid)]:
+            if pos not in VALID_POS():
                 x, y = pos2coord(pos, self.ngrid)
                 print("Invalid pos:", pos, "row:", x, "col:", y)
                 is_ok = False
@@ -260,5 +242,7 @@ class Move():
             return "x".join([str(x) for x in self.pos])
         return "-".join([str(x) for x in self.pos])
 
+    def id(self):
+        return action2id(self)
     # def __hash__(self):
         

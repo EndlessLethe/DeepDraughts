@@ -18,7 +18,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-from torch.autograd import Variable
 import numpy as np
 import os
 
@@ -123,14 +122,14 @@ class PolicyValueNet(nn.Module):
 
 class Model():
     """policy-value network """
-    def __init__(self, nsize, n_states, n_actions, MOVE_MAP, name = "default", 
+    def __init__(self, env_args, name = "default", 
                 use_gpu = False, l2_const = 1e-4):
+        nsize, _, n_states, n_actions = env_args
         self.nsize = nsize
         self.n_states = n_states
         self.n_actions = n_actions
         self.board_width = nsize
         self.board_height = nsize
-        self.MOVE_MAP = MOVE_MAP
 
         self.name = name
         self.checkpoint_n_epoch = None
@@ -152,7 +151,7 @@ class Model():
         action and the score of the board state
         """
         legal_positions = state.get_all_available_moves()
-        legal_position_ids = [self.MOVE_MAP[(x.pos[-2], x.pos[-1])] for x in legal_positions]
+        legal_position_ids = [x.id() for x in legal_positions]
         vec_board, vec_state = state.to_vector()
         if self.use_gpu:
             log_act_probs, value = self.policy_value_net(
@@ -236,7 +235,6 @@ class Model():
                     'nsize': self.nsize,
                     'n_states': self.n_states, 
                     'n_actions': self.n_actions, 
-                    'MOVE_MAP': self.MOVE_MAP, 
                     'name': self.name, 
                     'n_epoch': epoch, 
                     'use_gpu': self.use_gpu, 
@@ -254,14 +252,13 @@ class Model():
         nsize = model_params['nsize']
         n_states = model_params['n_states']
         n_actions = model_params['n_actions']
-        MOVE_MAP = model_params['MOVE_MAP']
 
         name = model_params['name']
         checkpoint_n_epoch = model_params['n_epoch']
         use_gpu = model_params['use_gpu']
         l2_const = model_params['l2_const']
 
-        model = Model(nsize, n_states, n_actions, MOVE_MAP, name, use_gpu, l2_const)
+        model = Model(nsize, n_states, n_actions, name, use_gpu, l2_const)
         model.checkpoint_n_epoch = checkpoint_n_epoch
         model.policy_value_net.load_state_dict(model_params['model'])
         model.optimizer.load_state_dict(model_params['optimizer'])

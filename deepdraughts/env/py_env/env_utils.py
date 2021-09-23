@@ -2,11 +2,20 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:31:25
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-22 01:47:06
+LastEditTime: 2021-09-24 01:05:48
 Description: 
 '''
 
 import numpy as np
+
+# Const value
+CONST_N_GRID_64 = 64
+CONST_N_GRID_100 = 100
+CONST_N_GRID_144 = 144
+CCONST_N_SIZE_8 = 8
+CONST_N_SIZE_10 = 10
+CONST_STR_RUSSIAN = "russian"
+CONST_ASCII_LOWER_A = 48
 
 # Basic code
 # For training AI, use 1 and -1
@@ -15,9 +24,46 @@ BLACK = -1
 
 RUSSIAN_RULE = 2
 BRAZILIAN_RULE = 3
-
 MEN_MOVE = 4
 KING_MOVE = 5
+
+# Current states
+CURRENT_RULE = None
+CURRENT_BORAD = None
+
+def set_rule(rule = CONST_STR_RUSSIAN):
+    global CURRENT_RULE
+    if rule.lower() == CONST_STR_RUSSIAN:
+        CURRENT_RULE = RUSSIAN_RULE
+    else:
+        CURRENT_RULE = BRAZILIAN_RULE
+
+def set_board(boardsize = CONST_N_GRID_64):
+    if boardsize not in (CONST_N_GRID_64, CONST_N_GRID_100, CONST_N_GRID_144):
+        raise Exception("Board size must be 8x8, 10x10 or 12x12.")
+    global CURRENT_BORAD
+    CURRENT_BORAD = boardsize
+
+set_rule()
+set_board()
+
+print("rule", CURRENT_RULE)
+print("board", CURRENT_BORAD)
+
+def get_env_args():
+    '''
+    Returns: 
+        nsize: board is nsize x nsize.
+        ngrids: #grids of board
+        n_actions: #number of actions
+        
+    '''    
+    if CURRENT_BORAD == CONST_N_GRID_64:
+        return CONST_N_SIZE_8, CONST_N_GRID_64, N_STATE_64, N_ACTION_64
+    elif CURRENT_BORAD == CONST_N_GRID_100:
+        return CONST_N_SIZE_10, CONST_N_GRID_100, N_STATE_100, N_ACTION_100
+    else:
+        raise Exception("Board size error!")
 
 # Game State code
 GAME_CONTINUE = 10
@@ -38,12 +84,6 @@ PURE_MCTS_PLAYER = 32
 ALPHAZERO_PLAYER = 33
 DRL_PLAYER = 34
 
-
-# Const value
-N_GRID_64 = 64
-N_GRID_100 = 100
-N_SIZE_8 = 8
-N_SIZE_10 = 10
 
 # Var Tables
 KING_POS_WHITE_64 = set([2, 4, 6, 8])
@@ -66,7 +106,37 @@ VALID_POS_100 = set([])
 EDGE_POS_64 = set([9, 25, 41, 57, 8, 24, 40, 56])
 EDGE_POS_100 = set([])
 
-ASCII_LOWER_A = 48
+def KING_PROMOTION_POS():
+    if CURRENT_BORAD == CONST_N_GRID_64:
+        return KING_POS_WHITE_64, KING_POS_BLACK_64
+    elif CURRENT_BORAD == CONST_N_GRID_100:
+        return KING_POS_WHITE_100, KING_POS_BLACK_100
+    else:
+        raise Exception("Board size error!")
+
+def VALID_POS():
+    if CURRENT_BORAD == CONST_N_GRID_64:
+        return VALID_POS_64
+    elif CURRENT_BORAD == CONST_N_GRID_100:
+        return VALID_POS_100
+    else:
+        raise Exception("Board size error!")
+
+def DEFAULT_POS():
+    if CURRENT_BORAD == CONST_N_GRID_64:
+        return DEFAULT_POS_WHITE_64, DEFAULT_POS_BLACK_64
+    elif CURRENT_BORAD == CONST_N_GRID_100:
+        return DEFAULT_POS_WHITE_100, DEFAULT_POS_BLACK_100
+    else:
+        raise Exception("Board size error!")
+
+def EDGE_POS():
+    if CURRENT_BORAD == CONST_N_GRID_64:
+        return EDGE_POS_64
+    elif CURRENT_BORAD == CONST_N_GRID_100:
+        return EDGE_POS_100
+    else:
+        raise Exception("Board size error!")
 
 '''
     Position function.
@@ -117,11 +187,11 @@ def get_khop_pos(pos, N_SIZE, N_GRID, VALID_POS, EDGE_POS):
 
 KHOP_POS_64 = dict()
 for x in VALID_POS_64:
-    KHOP_POS_64[x] = get_khop_pos(x, N_SIZE_8, N_GRID_64, VALID_POS_64, EDGE_POS_64)
+    KHOP_POS_64[x] = get_khop_pos(x, CCONST_N_SIZE_8, CONST_N_GRID_100, VALID_POS_64, EDGE_POS_64)
 
 KHOP_POS_100 = dict()
 for x in VALID_POS_100:
-    KHOP_POS_100[x] = get_khop_pos(x, N_SIZE_10, N_GRID_100, VALID_POS_100, EDGE_POS_100)
+    KHOP_POS_100[x] = get_khop_pos(x, N_SIZE_10, CONST_N_GRID_100, VALID_POS_100, EDGE_POS_100)
 
 def get_valid_moves(VALID_POS, HOP_POS_ARGS, KHOP_POS):
     moves = []
@@ -166,7 +236,7 @@ def norm_pos(pos):
         return POS_MAP_64[pos.lower()]
     if isinstance(pos, (list, tuple)): # (x, y) format, started from 1
         # TODO
-        # return POS_MAP_64[chr(ASCII_LOWER_A+pos[0]-1)+str(pos[1])] 
+        # return POS_MAP_64[chr(CONST_ASCII_LOWER_A+pos[0]-1)+str(pos[1])] 
         return 
     
 def norm_pos_list(iter):
@@ -217,7 +287,7 @@ def _actions2vec(action_ids, probs):
         vec[action] = prob
     return vec
 
-N_STATE_64 = N_SIZE_8 * 2 + 3
+N_STATE_64 = CCONST_N_SIZE_8 * 2 + 3
 
 def state2vec(state):
     '''

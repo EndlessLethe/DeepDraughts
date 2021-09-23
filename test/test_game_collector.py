@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-15 23:02:07
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-23 01:45:51
+LastEditTime: 2021-09-23 16:29:12
 Description: 
 '''
 
@@ -13,7 +13,7 @@ from deepdraughts.env import *
 from deepdraughts.gui import GUI
 from deepdraughts.game_collector import GameCollector
 from deepdraughts.mcts_pure import MCTSPlayer as MCTS_Pure
-from deepdraughts.mcts_alphaZero import MCTSPlayer_AlphaZero as MCTS_AlphaZero
+from deepdraughts.mcts_alphaZero import MCTSPlayer_alphazero as MCTS_alphazero
 from deepdraughts.net_pytorch import Model
 import time
 import torch
@@ -44,8 +44,8 @@ def test_alphazero_selfplay(filename):
     dir_file = "deepdraughts/savedata/"
     
     gc = GameCollector()
-    model = Model(N_SIZE_8, N_STATE_64, N_ACTION_64, MOVE_MAP_64, use_gpu=True)
-    mcts_player = MCTS_AlphaZero(model.policy_value_fn, c_puct=5, n_playout=1000, selfplay=True)
+    model = Model(CCONST_N_SIZE_8, N_STATE_64, N_ACTION_64, use_gpu=True)
+    mcts_player = MCTS_alphazero(model.policy_value_fn, c_puct=5, n_playout=1000, selfplay=True)
 
     # batch_size = 1
     # start_time = time.time()

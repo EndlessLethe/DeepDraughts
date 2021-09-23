@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 16:20:41
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-18 01:24:37
+LastEditTime: 2021-09-23 18:41:05
 Description: 
 '''
 
@@ -12,7 +12,7 @@ import copy
 import pickle
 
 class Game():
-    def __init__(self, player1_name = "player1", player2_name = "player2", ngrid = N_GRID_64, rule = RUSSIAN_RULE) -> None:
+    def __init__(self, player1_name = "player1", player2_name = "player2", ngrid = CONST_N_GRID_64, rule = RUSSIAN_RULE) -> None:
         self.move_path = []
         self.player1_name = player1_name
         self.player2_name = player2_name
@@ -72,7 +72,9 @@ class Game():
         is_over, winner = self.is_over()
         if is_over:
             if winner == None:
+                print("Game Draw")
                 return GAME_DRAW
+            print("Game over. " + "WHITE" if winner == WHITE else "BLACK" + "wins")
             return GAME_WHITE_WIN if winner == WHITE else GAME_BLACK_WIN
         return GAME_CONTINUE
 

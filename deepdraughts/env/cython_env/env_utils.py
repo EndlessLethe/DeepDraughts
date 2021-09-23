@@ -40,9 +40,9 @@ DRL_PLAYER = 34
 
 
 # Const value
-N_GRID_64 = 64
-N_GRID_100 = 100
-N_SIZE_8 = 8
+CONST_N_GRID_64 = 64
+CONST_N_GRID_100 = 100
+CONST_N_SIZE_8 = 8
 N_SIZE_10 = 10
 
 # Var Tables
@@ -117,11 +117,11 @@ def get_khop_pos(pos, N_SIZE, N_GRID, VALID_POS, EDGE_POS):
 
 KHOP_POS_64 = dict()
 for x in VALID_POS_64:
-    KHOP_POS_64[x] = get_khop_pos(x, N_SIZE_8, N_GRID_64, VALID_POS_64, EDGE_POS_64)
+    KHOP_POS_64[x] = get_khop_pos(x, CONST_N_SIZE_8, CONST_N_GRID_64, VALID_POS_64, EDGE_POS_64)
 
 KHOP_POS_100 = dict()
 for x in VALID_POS_100:
-    KHOP_POS_100[x] = get_khop_pos(x, N_SIZE_10, N_GRID_100, VALID_POS_100, EDGE_POS_100)
+    KHOP_POS_100[x] = get_khop_pos(x, N_SIZE_10, CONST_N_GRID_100, VALID_POS_100, EDGE_POS_100)
 
 def get_valid_moves(VALID_POS, HOP_POS_ARGS, KHOP_POS):
     moves = []
@@ -217,7 +217,7 @@ def _actions2vec(action_ids, probs):
         vec[action] = prob
     return vec
 
-N_STATE_64 = N_SIZE_8 * 2 + 3
+N_STATE_64 = CONST_N_SIZE_8 * 2 + 3
 
 def state2vec(state):
     '''
