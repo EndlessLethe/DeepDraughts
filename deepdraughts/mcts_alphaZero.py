@@ -16,14 +16,14 @@ network to guide the tree search and evaluate the leaf nodes
 from .mcts_pure import TreeNode, MCTS, MCTSPlayer
 import numpy as np
 import copy
+from .env import actions2vec
 
 def softmax(x):
     probs = np.exp(x - np.max(x))
     probs /= np.sum(probs)
     return probs
 
-
-class MCTS_alphazero(MCTS):
+class mcts_alphazero(MCTS):
     """An implementation of the modified Monte Carlo Tree Search by AlphaZero."""
 
     def __init__(self, policy_value_fn, c_puct=5, n_playout=10000):
@@ -92,7 +92,7 @@ class MCTSPlayer_alphazero(MCTSPlayer):
 
     def __init__(self, policy_value_function,
                  c_puct=5, n_playout=2000, selfplay=False):
-        self.mcts = MCTS_alphazero(policy_value_function, c_puct, n_playout)
+        self.mcts = mcts_alphazero(policy_value_function, c_puct, n_playout)
         self.selfplay = selfplay
 
     def get_action(self, game, temp=1e-3):

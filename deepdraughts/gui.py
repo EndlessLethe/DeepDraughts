@@ -2,10 +2,11 @@
 Author: Zeng Siwei
 Date: 2021-09-11 15:56:20
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-23 19:24:36
+LastEditTime: 2021-09-24 11:54:42
 Description: 
 '''
 
+from deepdraughts.env.py_env.env_utils import game_status_to_str
 import pygame as pg
 import time
 from .env import *
@@ -143,14 +144,7 @@ class GUI():
         if status == GAME_CONTINUE:
             return GUI_WAIT
         else:
-            if status == GAME_WHITE_WIN:
-                print("Game Over.", "WHITE", "wins.")
-            elif status == GAME_BLACK_WIN:
-                print("Game Over.", "BLACK", "wins.")
-            elif status == GAME_DRAW:
-                print("Game Draw.")
-            else:
-                raise Exception("Game Status Type Error.")
+            print(game_status_to_str(status))
             return GUI_EXIT
 
     def is_human_playing(self, player_white, player_black):

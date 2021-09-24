@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-18 17:09:16
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-23 15:57:39
+LastEditTime: 2021-09-24 15:25:19
 Description: 
 '''
 
@@ -12,20 +12,16 @@ from deepdraughts.net_pytorch import Model
 from deepdraughts.env import *
 
 def test_train():
-    checkpoint_dir = "savedata/"
-    model = Model(CONST_N_SIZE_8, N_STATE_64, N_ACTION_64, MOVE_MAP_64, name = "test_train")
+    checkpoint_dir = "./savedata/"
+    env_args = get_env_args()
+    model = Model(env_args, name = "test_train")
     training_pipeline = TrainPipeline(model, checkpoint_dir)
     training_pipeline.run()
 
-def test_policy_evaluate():
-    checkpoint_dir = "savedata/"
-    model = Model(CONST_N_SIZE_8, N_STATE_64, N_ACTION_64, MOVE_MAP_64, name = "test_policy")
-    training_pipeline = TrainPipeline(model, checkpoint_dir)
-    training_pipeline.policy_evaluate()
-
 def test_run():
-    checkpoint_dir = "savedata/"
-    model = Model(CONST_N_SIZE_8, N_STATE_64, N_ACTION_64, MOVE_MAP_64, name = "test_run")
+    checkpoint_dir = "./savedata/"
+    env_args = get_env_args()
+    model = Model(env_args, name = "test_run")
     training_pipeline = TrainPipeline(model, checkpoint_dir)
     training_pipeline.run()
 

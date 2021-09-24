@@ -11,5 +11,5 @@ from deepdraughts.gui import GUI
 
 def test_load_game():
     game = Game()
-    filepath = "F:/Projects/dramaster/deepdraughts/savedata/1.txt"
+    filepath = "F:/Projects/dramaster/./savedata/1.txt"
     game.load_game(filepath)

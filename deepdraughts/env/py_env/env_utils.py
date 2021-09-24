@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:31:25
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-24 01:05:48
+LastEditTime: 2021-09-24 11:53:12
 Description: 
 '''
 
@@ -12,7 +12,7 @@ import numpy as np
 CONST_N_GRID_64 = 64
 CONST_N_GRID_100 = 100
 CONST_N_GRID_144 = 144
-CCONST_N_SIZE_8 = 8
+CONST_N_SIZE_8 = 8
 CONST_N_SIZE_10 = 10
 CONST_STR_RUSSIAN = "russian"
 CONST_ASCII_LOWER_A = 48
@@ -70,6 +70,15 @@ GAME_CONTINUE = 10
 GAME_WHITE_WIN = 11
 GAME_BLACK_WIN = 12
 GAME_DRAW = 13
+
+def game_status_to_str(game_status):
+    if game_status == GAME_DRAW:
+        return "Game Draw"
+    elif game_status == GAME_WHITE_WIN:
+        return "Game over. White wins."
+    elif game_status == GAME_BLACK_WIN:
+        return "Game over. Black wins."
+    return ""
 
 # GUI State code
 GUI_EXIT = 20
@@ -187,7 +196,7 @@ def get_khop_pos(pos, N_SIZE, N_GRID, VALID_POS, EDGE_POS):
 
 KHOP_POS_64 = dict()
 for x in VALID_POS_64:
-    KHOP_POS_64[x] = get_khop_pos(x, CCONST_N_SIZE_8, CONST_N_GRID_100, VALID_POS_64, EDGE_POS_64)
+    KHOP_POS_64[x] = get_khop_pos(x, CONST_N_SIZE_8, CONST_N_GRID_100, VALID_POS_64, EDGE_POS_64)
 
 KHOP_POS_100 = dict()
 for x in VALID_POS_100:
@@ -287,7 +296,7 @@ def _actions2vec(action_ids, probs):
         vec[action] = prob
     return vec
 
-N_STATE_64 = CCONST_N_SIZE_8 * 2 + 3
+N_STATE_64 = CONST_N_SIZE_8 * 2 + 3
 
 def state2vec(state):
     '''

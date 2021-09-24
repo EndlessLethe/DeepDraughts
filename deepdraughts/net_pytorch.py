@@ -20,6 +20,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import numpy as np
 import os
+import datetime
 
 def set_learning_rate(optimizer, lr):
     """Sets the learning rate to the given value"""
@@ -65,12 +66,14 @@ class PolicyValueNet(nn.Module):
         self.n_actions = n_actions
 
         # common layers
-        self.conv1 = nn.Conv2d(4, 32, kernel_size=3, padding=1)
+        self.conv1 = nn.Conv2d(4, 32, kernel_size=3, padding=2) # nxn -> (n+2) x (n+2)
         self.bn1 = nn.BatchNorm2d(32)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1) # (n+2) x (n+2) -> (n+2) x (n+2)
         self.bn2 = nn.BatchNorm2d(64)
-        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
+        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, padding=1) #(n+2) x (n+2) -> (n+2) x (n+2)
         self.bn3 = nn.BatchNorm2d(128)
+        self.conv4 = nn.Conv2d(128, 128, kernel_size=3, padding=0) # (n+2) x (n+2) -> nxn
+        self.bn4 = nn.BatchNorm2d(128)
 
         # state layers
         self.st_fc1 = nn.Linear(n_states, 64)
@@ -99,6 +102,8 @@ class PolicyValueNet(nn.Module):
         x = self.bn2(x)
         x = F.relu(self.conv3(x))
         x = self.bn3(x)
+        x = F.relu(self.conv4(x))
+        x = self.bn4(x)
 
         y = F.relu(self.st_fc1(vec_state))
         y = F.relu(y)
@@ -227,10 +232,11 @@ class Model():
 
     def save(self, checkpoint_dir, epoch, is_best=False):
         """ save model params to file """
+        now_time = datetime.datetime.now().strftime("%Y%m%d_%H%M")
         if is_best:
-            savepath = os.path.join(checkpoint_dir, self.name+'_{}_best.pth.tar'.format(epoch))
+            savepath = os.path.join(checkpoint_dir, self.name+'_epoch{}_{}_best.pth.tar'.format(epoch, now_time))
         else:
-            savepath = os.path.join(checkpoint_dir, self.name+'_{}.pth.tar'.format(epoch))
+            savepath = os.path.join(checkpoint_dir, self.name+'_epoch{}_{}.pth.tar'.format(epoch, now_time))
         torch.save({
                     'nsize': self.nsize,
                     'n_states': self.n_states, 

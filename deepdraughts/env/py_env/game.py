@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 16:20:41
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-23 18:41:05
+LastEditTime: 2021-09-24 11:53:21
 Description: 
 '''
 
@@ -72,9 +72,7 @@ class Game():
         is_over, winner = self.is_over()
         if is_over:
             if winner == None:
-                print("Game Draw")
                 return GAME_DRAW
-            print("Game over. " + "WHITE" if winner == WHITE else "BLACK" + "wins")
             return GAME_WHITE_WIN if winner == WHITE else GAME_BLACK_WIN
         return GAME_CONTINUE
 
