@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-15 16:32:59
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-24 16:54:41
+LastEditTime: 2021-09-29 22:03:56
 Description: 
 '''
 
@@ -18,7 +18,8 @@ class GameCollector():
         """ start a self-play game using a MCTS player, reuse the search tree,
         and store the self-play data: (state, mcts_probs, z) for training
         """
-        print("Start one game for self playing")
+        np.random.seed()
+        print("Start one game for self playing with random seed:", np.random.get_state()[1][:3])
         if game is None:
             game = Game()
         states, mcts_probs, current_players = [], [], []
@@ -52,7 +53,8 @@ class GameCollector():
         Evaluate the trained policy by playing against the pure MCTS player
         Note: this is only for monitoring the progress of training
         """
-        print("Start one game for evaluation")
+        np.random.seed()
+        print("Start one game for evaluation with random seed:", np.random.get_state()[1][:3])
         cnt_win, cnt_lose, cnt_draw = 0, 0, 0
         game = Game(**game_args)
         white_player = current_policy if i % 2 else eval_policy

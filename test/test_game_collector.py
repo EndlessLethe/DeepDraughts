@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-15 23:02:07
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-24 15:52:36
+LastEditTime: 2021-09-30 12:22:28
 Description: 
 '''
 
@@ -41,8 +41,8 @@ def test_pure_mcts_selfplay(filename):
 
 def test_alphazero_selfplay(filename):
     dir_file = "./savedata/"
-    now_time = datetime.datetime.now()
-    filepath = dir_file + filename + "_" + str(now_time) +".pkl"
+    now_time = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+    filepath = dir_file + filename + "_" + now_time +".pkl"
 
     gc = GameCollector()
     env_args = get_env_args()
@@ -61,18 +61,19 @@ def test_alphazero_selfplay(filename):
     # Non parallel 1 selfplay: 304.20654487609863 s using gpu
 
     batch_size = 20
-    n_cores = 4
+    n_cores = 8
     start_time = time.time()
     gc.parallel_collect_selfplay(n_cores = n_cores, shared_model = model.policy_value_net, policy = mcts_player, batch_size = batch_size, filepath = filepath)
     end_time = time.time()
     print("Paralleled " + str(batch_size) + " selfplay with " + str(n_cores) + " core:", end_time-start_time, "s")
     # Paralleled 20 selfplay with 8 core: 2545.431615114212 s
     # Paralleled 20 selfplay with 4 core: 3394.675544023514 s
+    # Paralleled 20 selfplay with 8 core: 3835.0908370018005 s
 
 def test_load_selfplay():
     dir_file = "./savedata/"
     gc = GameCollector()
-    datas = gc.load_selfplay(dir_file + "test_selfplay1.pkl")
+    datas = gc.load_selfplay(dir_file + "test_selfplay2_20210930_1113.pkl")
     
     # datas = [datas[2]]
     for winner, states, mcts_probs, policy_grad in datas:
@@ -105,5 +106,5 @@ if __name__ == "__main__":
 
     # torch.multiprocessing.set_start_method("spawn")
     # test_alphazero_selfplay("test_selfplay2")
-    # test_load_selfplay()
-    test_eval()
+    test_load_selfplay()
+    # test_eval()
