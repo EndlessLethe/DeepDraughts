@@ -10,6 +10,7 @@ from .env import Game, game_status_to_str
 import numpy as np
 import pickle
 import copy
+import time
 
 
 class GameCollector():
@@ -20,6 +21,7 @@ class GameCollector():
         """
         np.random.seed()
         print("Start one game for self playing with random seed:", np.random.get_state()[1][:3])
+        start_time = time.time()
         if game is None:
             game = Game()
         states, mcts_probs, current_players = [], [], []
@@ -30,10 +32,13 @@ class GameCollector():
             mcts_probs.append(move_probs)
             current_players.append(game.current_player)
             # perform a move
-            status = game.do_move(move)
+            game_status = game.do_move(move)
             end, winner = game.is_over()
             if end:
-                print(game_status_to_str(status))
+                end_time = time.time()
+                print(game_status_to_str(game_status), 
+                    "Using", end_time-start_time, "s")
+                
                 break
 
         policy_grad = np.zeros(len(current_players))
@@ -45,6 +50,7 @@ class GameCollector():
 
         # reset MCTS root node
         policy.reset()
+        
         return winner, states, mcts_probs, policy_grad
 
     @classmethod
@@ -55,6 +61,7 @@ class GameCollector():
         """
         np.random.seed()
         print("Start one game for evaluation with random seed:", np.random.get_state()[1][:3])
+        start_time = time.time()
         cnt_win, cnt_lose, cnt_draw = 0, 0, 0
         game = Game(**game_args)
         white_player = current_policy if i % 2 else eval_policy
@@ -66,7 +73,9 @@ class GameCollector():
             game_status = game.do_move(move)
             is_over, winner = game.is_over()
             if is_over:
-                print(game_status_to_str(game_status))
+                end_time = time.time()
+                print(game_status_to_str(game_status), 
+                    "Using", end_time-start_time, "s")
                 break
         if winner is None:
             cnt_draw += 1
@@ -93,6 +102,7 @@ class GameCollector():
             pool.close() 
             pool.join()
             results = [x.get() for x in pool_results]
+            pool.close()
 
         cnt_win, cnt_lose, cnt_draw = 0, 0, 0
         for win, lose, draw in results:
@@ -130,6 +140,7 @@ class GameCollector():
             selfplay_data = [x.get() for x in pool_results]
             if filepath:
                 cls.dump_selfplay(selfplay_data, filepath)
+            pool.close()
         return selfplay_data
             
     @classmethod
