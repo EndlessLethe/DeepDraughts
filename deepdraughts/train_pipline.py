@@ -57,21 +57,20 @@ class TrainPipeline():
         plays = self.game_collector.parallel_collect_selfplay(n_cores = self.n_cores, 
                 shared_model = self.model.policy_value_net, policy = self.mcts_player, batch_size = self.batch_size, filepath = filepath)
         
-        _, state_batch_tmp, mcts_probs_batch_tmp, policy_grad_batch = zip(*plays)
-        state_batch = []
+        _, _, state_batch_tmp, mcts_probs_batch_tmp, policy_grad_batch = zip(*plays)
+        state_vecs_batch = []
         mcts_probs_batch = []
-        for states, mcts_probs in zip(state_batch_tmp, mcts_probs_batch_tmp):
-            state_batch.extend(states)
+        for state_vecs, mcts_probs in zip(state_batch_tmp, mcts_probs_batch_tmp):
+            state_vecs_batch.extend(state_vecs)
             mcts_probs_batch.append(np.array(mcts_probs))
         mcts_probs_batch = np.concatenate(mcts_probs_batch, axis=0)
         policy_grad_batch = np.concatenate(policy_grad_batch, axis=0)
         # print(len(state_batch), mcts_probs_batch.shape, policy_grad_batch.shape)
-        assert len(state_batch) == mcts_probs_batch.shape[0]
-        assert len(state_batch) == policy_grad_batch.shape[0]
+        assert len(state_vecs_batch) == mcts_probs_batch.shape[0]
+        assert len(state_vecs_batch) == policy_grad_batch.shape[0]
 
-        vectors = [state.to_vector() for state in state_batch]
-        vec_board_batch = np.stack((x[0] for x in vectors), axis=0)
-        vec_state_batch = np.stack((x[1] for x in vectors), axis=0)
+        vec_board_batch = np.stack((x[0] for x in state_vecs_batch), axis=0)
+        vec_state_batch = np.stack((x[1] for x in state_vecs_batch), axis=0)
         state_batch = (vec_board_batch, vec_state_batch)
 
         old_probs, old_v = self.model.policy_value_batch(state_batch)

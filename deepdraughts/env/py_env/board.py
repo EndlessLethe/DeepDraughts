@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:36:26
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-23 19:24:47
+LastEditTime: 2021-10-09 00:25:07
 Description: 
 '''
 
@@ -24,7 +24,7 @@ class Board():
         if n * n != ngrid:
             raise Exception("N_grid is not squre number.")
         self.nsize = n
-        
+
     '''
     Update board
     '''    

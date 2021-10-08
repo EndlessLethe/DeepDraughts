@@ -15,7 +15,7 @@ network to guide the tree search and evaluate the leaf nodes
 
 from .mcts_pure import TreeNode, MCTS, MCTSPlayer
 import numpy as np
-import copy
+import pickle
 from .env import actions2vec
 
 def softmax(x):
@@ -76,7 +76,7 @@ class mcts_alphazero(MCTS):
         temp: temperature parameter in (0, 1] controls the level of exploration
         """
         for n in range(self._n_playout):
-            state_copy = copy.deepcopy(state)
+            state_copy = pickle.loads(pickle.dumps(state, -1))
             self._playout(state_copy)
 
         # calc the move probabilities based on visit counts at the root node

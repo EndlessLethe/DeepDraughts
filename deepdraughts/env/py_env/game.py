@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 16:20:41
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-24 11:53:21
+LastEditTime: 2021-10-09 00:30:41
 Description: 
 '''
 
@@ -132,7 +132,7 @@ class Game():
         king_chain_takings = []
         king_normal_jumps = []
         for king_jump in king_jumps:
-            board_tmp = copy.deepcopy(self.current_board)
+            board_tmp = pickle.loads(pickle.dumps(self.current_board, -1))
             board_tmp.do_move(king_jump)
             tmp_king_jumps, tmp_jump_moves, _ = board_tmp.get_available_moves(king_jump.pos[-1])
             can_take_piece = (len(tmp_king_jumps) + len(tmp_jump_moves)) >= 1

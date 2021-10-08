@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-15 16:32:59
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-29 22:03:56
+LastEditTime: 2021-10-08 20:08:43
 Description: 
 '''
 
@@ -17,7 +17,7 @@ class GameCollector():
     @classmethod
     def self_play(cls, policy, temp=1e-3, game=None):
         """ start a self-play game using a MCTS player, reuse the search tree,
-        and store the self-play data: (state, mcts_probs, z) for training
+        and store the self-play data: (winner, game, states, mcts_probs, policy_grad) for training
         """
         np.random.seed()
         print("Start one game for self playing with random seed:", np.random.get_state()[1][:3])
@@ -28,7 +28,7 @@ class GameCollector():
         while True:
             move, move_probs = policy.get_action(game, temp=temp)
             # store the data
-            states.append(copy.deepcopy(game))
+            states.append(game.to_vector())
             mcts_probs.append(move_probs)
             current_players.append(game.current_player)
             # perform a move
@@ -51,7 +51,7 @@ class GameCollector():
         # reset MCTS root node
         policy.reset()
         
-        return winner, states, mcts_probs, policy_grad
+        return winner, game, states, mcts_probs, policy_grad
 
     @classmethod
     def eval(cls, current_policy, eval_policy, i, temp = 1e-3, game_args=dict()):
@@ -126,7 +126,8 @@ class GameCollector():
     def parallel_collect_selfplay(cls, n_cores, shared_model, policy, batch_size = 1000, temp = 1e-3, filepath = None, game = None):
         import torch
         from torch.multiprocessing import Pool
-        shared_model.share_memory()
+        if shared_model is not None:
+            shared_model.share_memory()
         with torch.no_grad():
             pool = Pool(n_cores)
             pool_results = []
