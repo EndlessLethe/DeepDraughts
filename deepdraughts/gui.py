@@ -2,11 +2,11 @@
 Author: Zeng Siwei
 Date: 2021-09-11 15:56:20
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-24 11:54:42
+LastEditTime: 2021-10-09 21:10:49
 Description: 
 '''
 
-from deepdraughts.env.py_env.env_utils import game_status_to_str
+from .env import game_status_to_str
 import pygame as pg
 import time
 from .env import *
@@ -161,8 +161,6 @@ class GUI():
 
         pg.font.init()
         font = pg.font.Font(None, 36)
-
-        
         
         running = True
         while running:
@@ -180,6 +178,7 @@ class GUI():
                         running = False
                     elif human_action == GUI_WAIT:
                         continue
+                    print("event", human_action)
                     game_status = self.update_by_human_action(human_action, info, pos_list, available_moves)
                     gui_status = self.read_game_status(game_status)
                     if gui_status == GUI_EXIT:

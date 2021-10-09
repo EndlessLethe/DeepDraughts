@@ -13,6 +13,7 @@ network to guide the tree search and evaluate the leaf nodes
     # Code is modified by EndlessLethe for further use.
 '''
 
+from .env import game_is_over, game_is_drawn, game_winner
 from .mcts_pure import TreeNode, MCTS, MCTSPlayer
 import numpy as np
 import pickle
@@ -37,12 +38,13 @@ class mcts_alphazero(MCTS):
         node = self._root
         list_node = [node]
         list_player = [state.current_player]
+        game_status = state.game_status
         while(1):
             if node.is_leaf():
                 break
             # Greedily select next move.
             action, node = node.select(self._c_puct)
-            state.do_move(action)
+            game_status = state.do_move(action)
             list_node.append(node)
             list_player.append(state.current_player)
 
@@ -52,7 +54,7 @@ class mcts_alphazero(MCTS):
         action_probs, leaf_value = self._policy(state)
 
         # Check for end of game.
-        is_over, winner = state.is_over()
+        is_over = game_is_over(game_status)
         if not is_over:
             node.expand(action_probs)
 
@@ -60,9 +62,10 @@ class mcts_alphazero(MCTS):
         # only modified leaf_value when game is over with 1 or -1
         current_player = state.current_player
         if is_over:
-            if winner is None:
+            if game_is_drawn(game_status):
                 leaf_value = 0
             else:
+                winner = game_winner(game_status)
                 leaf_value = 1.0 if winner == current_player else -1.0
 
         # Update value and visit count of nodes in this traversal.

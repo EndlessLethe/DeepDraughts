@@ -6,7 +6,6 @@ An implementation of the training pipeline of AlphaZero for Gomoku
 """
 
 from __future__ import print_function
-from deepdraughts.env.py_env.env_utils import game_status_to_str
 import random
 import numpy as np
 from collections import defaultdict

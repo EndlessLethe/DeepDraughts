@@ -2,11 +2,11 @@
 Author: Zeng Siwei
 Date: 2021-09-15 16:32:59
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-08 20:08:43
+LastEditTime: 2021-10-09 19:57:26
 Description: 
 '''
 
-from .env import Game, game_status_to_str
+from .env import Game, game_status_to_str, game_is_drawn, game_is_over, game_winner
 import numpy as np
 import pickle
 import copy
@@ -33,16 +33,16 @@ class GameCollector():
             current_players.append(game.current_player)
             # perform a move
             game_status = game.do_move(move)
-            end, winner = game.is_over()
-            if end:
+            is_over = game_is_over(game_status)
+            if is_over:
                 end_time = time.time()
                 print(game_status_to_str(game_status), 
-                    "Using", end_time-start_time, "s")
-                
+                    "Costing", end_time-start_time, "s")
                 break
 
+        winner = game_winner(game_status)
         policy_grad = np.zeros(len(current_players))
-        if winner is not None:
+        if not game_is_drawn(game_status):
             # winner from the perspective of the current player of each state
             current_players = np.array(current_players)
             policy_grad[current_players == winner] = 1.0
@@ -71,18 +71,20 @@ class GameCollector():
             current_player = white_player if game.current_player == WHITE else black_player
             move, _ = current_player.get_action(game, temp)
             game_status = game.do_move(move)
-            is_over, winner = game.is_over()
+            is_over = game_is_over(game_status)
             if is_over:
                 end_time = time.time()
                 print(game_status_to_str(game_status), 
-                    "Using", end_time-start_time, "s")
+                    "Costing", end_time-start_time, "s")
                 break
-        if winner is None:
+        if game_is_drawn(game_status):
             cnt_draw += 1
-        elif (winner == WHITE and white_player is current_policy) or (winner != WHITE and black_player is current_policy):
-            cnt_win += 1
-        elif (winner == WHITE and white_player is eval_policy) or (winner != WHITE and black_player is eval_policy):
-            cnt_lose += 1
+        else:
+            winner = game_winner(game_status)
+            if (winner == WHITE and white_player is current_policy) or (winner != WHITE and black_player is current_policy):
+                cnt_win += 1
+            elif (winner == WHITE and white_player is eval_policy) or (winner != WHITE and black_player is eval_policy):
+                cnt_lose += 1
                 
         return cnt_win, cnt_lose, cnt_draw
 

@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:36:26
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-09 00:25:07
+LastEditTime: 2021-10-10 00:38:05
 Description: 
 '''
 
@@ -14,10 +14,9 @@ class Board():
         self.pieces = dict() # key - value: pos - piece
         self.ngrid = ngrid
         self.rule = rule
+
+        # no need caching moves
         self.piece_moves = dict()
-        self.all_king_jumps = []
-        self.all_jump_moves = []
-        self.all_normal_moves = []
 
         import math
         n = int(math.sqrt(ngrid))
@@ -30,9 +29,6 @@ class Board():
     '''    
     def reset_available_moves(self):
         self.piece_moves.clear()
-        self.all_king_jumps.clear()
-        self.all_jump_moves.clear()
-        self.all_normal_moves.clear()
 
     def set_board(self, whites_pos, blacks_pos, whites_isking = None, blacks_isking = None):
         whites_pos = norm_pos_list(whites_pos)
@@ -172,36 +168,8 @@ class Board():
                 normal_moves.extend(tmp_normal)
 
 
-        self.piece_moves[pos] = (king_jump_moves, jump_moves, normal_moves)
+        # self.piece_moves[pos] = (king_jump_moves, jump_moves, normal_moves)
         return king_jump_moves, jump_moves, normal_moves
-
-
-    def get_all_available_moves(self, current_player):
-        '''
-        Args: 
-		
-        Returns: 
-            take_piece: Bool
-            next_moves: List
-        '''
-        if len(self.all_king_jumps) + len(self.all_jump_moves) + len(self.all_normal_moves) >= 1:
-            return self.all_king_jumps, self.all_jump_moves, self.all_normal_moves
-
-        all_king_jumps = []
-        all_jump_moves = []
-        all_normal_moves = []
-        for pos in self.pieces:
-            if self.pieces[pos].player != current_player:
-                continue
-            king_jump_moves, jump_moves, normal_moves = self.get_available_moves(pos)
-            all_king_jumps.extend(king_jump_moves)
-            all_jump_moves.extend(jump_moves)
-            all_normal_moves.extend(normal_moves)
-
-        self.all_king_jumps = all_king_jumps
-        self.all_jump_moves = all_jump_moves
-        self.all_normal_moves = all_normal_moves
-        return all_king_jumps, all_jump_moves, all_normal_moves
         
 class Move():
     @classmethod

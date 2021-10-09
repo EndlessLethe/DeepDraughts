@@ -2,10 +2,11 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:31:25
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-24 11:53:12
+LastEditTime: 2021-10-10 00:17:53
 Description: 
 '''
 
+from pickle import FALSE
 import numpy as np
 
 # Const value
@@ -20,6 +21,7 @@ CONST_ASCII_LOWER_A = 48
 # Basic code
 # For training AI, use 1 and -1
 WHITE = 1
+NO_WINNER = 0
 BLACK = -1
 
 RUSSIAN_RULE = 2
@@ -70,6 +72,25 @@ GAME_CONTINUE = 10
 GAME_WHITE_WIN = 11
 GAME_BLACK_WIN = 12
 GAME_DRAW = 13
+GAME_OVER_SET = set([GAME_WHITE_WIN, GAME_BLACK_WIN, GAME_DRAW])
+
+def game_is_over(game_status):
+    if game_status in GAME_OVER_SET:
+        return True
+    return False
+
+def game_is_drawn(game_status):
+    if game_status == GAME_DRAW:
+        return True
+    return False
+
+def game_winner(game_status):
+    if game_status == GAME_WHITE_WIN:
+        return WHITE
+    elif game_status == GAME_BLACK_WIN:
+        return BLACK
+    else:
+        return NO_WINNER
 
 def game_status_to_str(game_status):
     if game_status == GAME_DRAW:

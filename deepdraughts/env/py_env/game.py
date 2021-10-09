@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 16:20:41
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-09 00:30:41
+LastEditTime: 2021-10-10 00:30:00
 Description: 
 '''
 
@@ -25,6 +25,7 @@ class Game():
 
         self.is_chain_taking = False
         self.chain_taking_moves = []
+        self.game_status = self.is_over()
 
     def reset_available_moves(self):
         self.available_moves = None
@@ -32,7 +33,7 @@ class Game():
     def reset_chain_taking_states(self):
         self.is_chain_taking = False
         self.chain_taking_moves = []
-
+        
     def do_move(self, move):
         self.current_board.do_move(move)
         self.move_path.append(move)
@@ -43,47 +44,59 @@ class Game():
         else:
             self.n_king_move += 1
 
-        # check whether the player can take another piece after this move.
-        king_jumps, jumps, _ = self.current_board.get_available_moves(move.pos[-1])
 
-        # The folling code block is the same with get_all_available_moves()
-        # for checking whether go over the same piece
-        if king_jumps:
-            list_remove = []
-            for king_jump in king_jumps:
-                if is_opposite_direcion(king_jump.direction, move.direction):
-                    pos_a = move.pos[-2]
-                    pos_b = move.pos[-1]
-                    pos_c = king_jump.pos[-1]
-                    if not ((pos_a > pos_b and pos_b > pos_c) or (pos_a < pos_b and pos_b < pos_c)):
-                        list_remove.append(king_jump)
-            for tmp_move in list_remove:
-                king_jumps.remove(tmp_move)
+        # check whether in chain-taking
+        # only when chain-taking, keep current player playing
+        if move.take_piece:
+            # check whether the player can take another piece after this move.
+            can_take_piece = False
+            king_jumps, jumps, _ = self.current_board.get_available_moves(move.pos[-1])
 
-        can_take_piece = (len(king_jumps) + len(jumps)) >= 1
-        if move.take_piece and can_take_piece:
-            # 连吃 chain-taking
-            self.is_chain_taking = True
-            self.chain_taking_moves = [move]
-        else:
-            self.change_player()
-            self.reset_chain_taking_states()
+            if len(jumps) >= 1:
+                can_take_piece = True
+            else:
+                # The folling code block is the same with get_all_available_moves()
+                # for checking whether king go over the same piece
+                list_remove = []
+                for king_jump in king_jumps:
+                    if is_opposite_direcion(king_jump.direction, move.direction):
+                        pos_a = move.pos[-2]
+                        pos_b = move.pos[-1]
+                        pos_c = king_jump.pos[-1]
+                        if not ((pos_a > pos_b and pos_b > pos_c) or (pos_a < pos_b and pos_b < pos_c)):
+                            list_remove.append(king_jump)
+                for tmp_move in list_remove:
+                    king_jumps.remove(tmp_move)
+                can_take_piece = len(king_jumps) >= 1
 
-        is_over, winner = self.is_over()
-        if is_over:
-            if winner == None:
-                return GAME_DRAW
-            return GAME_WHITE_WIN if winner == WHITE else GAME_BLACK_WIN
-        return GAME_CONTINUE
+            if can_take_piece:
+                # 连吃 chain-taking
+                self.is_chain_taking = True
+                self.chain_taking_moves.append(move)
+                return GAME_CONTINUE
+
+        self.change_player()
+        self.reset_chain_taking_states()
+        self.game_status = self.is_over()
+        return self.game_status
+        
 
     def is_over(self):
-        available_moves = self.get_all_available_moves()
-        if len(available_moves) == 0:
-            return True, WHITE if self.current_player == BLACK else BLACK
+        has_available_moves = False
+        for pos, piece in self.current_board.pieces.items():
+            if piece.player != self.current_player:
+                continue
+            king_jumps_tmp, jumps_tmp, normals_tmp = self.current_board.get_available_moves(pos)
+            if len(king_jumps_tmp) + len(jumps_tmp) + len(normals_tmp) >= 1:
+                has_available_moves = True
+                break
+
+        if not has_available_moves:
+            return GAME_WHITE_WIN if self.current_player == BLACK else GAME_BLACK_WIN
         elif self.is_drawn():
-            return True, None
+            return GAME_DRAW
         else:
-            return False, None
+            return GAME_CONTINUE
 
     def is_drawn(self):
         '''
@@ -120,7 +133,14 @@ class Game():
                 king_jumps.remove(move)
 
         else:
-            king_jumps, jump_moves, normal_moves = self.current_board.get_all_available_moves(self.current_player)
+            king_jumps, jump_moves, normal_moves = [], [], []
+            for pos, piece in self.current_board.pieces.items():
+                if piece.player != self.current_player:
+                    continue
+                king_jumps_tmp, jumps_tmp, normals_tmp = self.current_board.get_available_moves(pos)
+                king_jumps.extend(king_jumps_tmp)
+                jump_moves.extend(jumps_tmp)
+                normal_moves.extend(normals_tmp)
 
         if len(king_jumps)  == 0:
             self.available_moves = jump_moves if len(jump_moves) >= 1 else normal_moves
@@ -147,9 +167,6 @@ class Game():
 
     def change_player(self):
         self.current_player = WHITE if self.current_player == BLACK else BLACK
-        self.current_board.reset_available_moves()
-        self.reset_available_moves()
-        self.is_chain_taking = False
 
     def to_vector(self):
         return state2vec(self)

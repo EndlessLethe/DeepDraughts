@@ -31,6 +31,8 @@ import numpy as np
 import pickle
 from operator import itemgetter
 
+from .env import game_is_over, game_is_drawn, game_winner
+
 def rollout_policy_fn(game):
     """a coarse, fast version of policy_fn used in the rollout phase."""
     # rollout randomly
@@ -134,19 +136,21 @@ class MCTS(object):
         node = self._root
         list_node = [node]
         list_player = [state.current_player]
+        game_status = state.game_status
         while True:
             if node.is_leaf():
                 break
 
             # Greedily select next move.
             action, node = node.select(self._c_puct)
-            state.do_move(action)
+            game_status = state.do_move(action)
             list_node.append(node)
             list_player.append(state.current_player)
 
         action_probs, _ = self._policy(state)
+
         # Check for end of game
-        is_over, _ = state.is_over()
+        is_over = game_is_over(game_status)
         if not is_over:
             node.expand(action_probs)
         # Evaluate the leaf node by random rollout
@@ -167,23 +171,31 @@ class MCTS(object):
         returning +1 if the current player wins, -1 if the opponent wins,
         and 0 if it is a tie.
 
+        Args:
+            state: current game.
+            game_status: telling whether current game is over and who's winner.
+
         Returns:
             value: Value of current state.
         """
         start_player = state.current_player
-        value = None
+        value = 0
+        game_status = state.game_status
+        is_over = False
         for i in range(limit):
-            is_over, winner = state.is_over()
+            is_over = game_is_over(game_status)
             if is_over: 
-                if winner == None:
+                if game_is_drawn(game_status):
                     value = 0
                 else:
+                    winner = game_winner(game_status)
                     value = 1 if winner == start_player else -1
                 break
             action_probs = rollout_policy_fn(state)
             max_action = max(action_probs, key=itemgetter(1))[0]
-            state.do_move(max_action)
-        if value is None:
+            game_status = state.do_move(max_action)
+        
+        if is_over == False:
             # If no break from the loop, issue a warning.
             print("WARNING: rollout reached move limit")
             value = 0
