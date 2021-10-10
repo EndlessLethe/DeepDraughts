@@ -171,7 +171,7 @@ class Model():
             act_probs = np.exp(log_act_probs.data.numpy().flatten())
             value = value.data[0][0]
         act_probs = zip(legal_positions, act_probs[legal_position_ids])
-        return act_probs, value
+        return act_probs, value.item()
 
     def policy_value_batch(self, state_batch):
         """
