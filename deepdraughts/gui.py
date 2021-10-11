@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 15:56:20
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-09 21:10:49
+LastEditTime: 2021-10-11 11:10:03
 Description: 
 '''
 
@@ -164,13 +164,6 @@ class GUI():
         
         running = True
         while running:
-            # quering current states for each frame
-            pieces = self.game.current_board.get_pieces()
-            pos_list = [x.pos for x in pieces]
-            player_list = [x.player for x in pieces]
-            isking_list = [x.isking for x in pieces]
-            available_moves = self.game.get_all_available_moves()
-
             if self.is_human_playing(player_white, player_black):
                 for event in pg.event.get():
                     human_action, info = self.listen_human_action(event)
@@ -194,6 +187,12 @@ class GUI():
                 if gui_status == GUI_EXIT:
                     running = False
 
+            # quering current states for each frame
+            pieces = self.game.current_board.get_pieces()
+            pos_list = [x.pos for x in pieces]
+            player_list = [x.player for x in pieces]
+            isking_list = [x.isking for x in pieces]
+            available_moves = self.game.get_all_available_moves()
             self.draw_background()
             self.draw_pieces(pos_list, player_list, isking_list, self.game.current_board.nsize)
             

@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 16:20:41
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-10 00:30:00
+LastEditTime: 2021-10-11 11:07:28
 Description: 
 '''
 
@@ -37,6 +37,7 @@ class Game():
     def do_move(self, move):
         self.current_board.do_move(move)
         self.move_path.append(move)
+        self.chain_taking_moves.append(move)
         self.reset_available_moves()
         
         if move.move_type == MEN_MOVE:
@@ -55,24 +56,13 @@ class Game():
             if len(jumps) >= 1:
                 can_take_piece = True
             else:
-                # The folling code block is the same with get_all_available_moves()
-                # for checking whether king go over the same piece
-                list_remove = []
-                for king_jump in king_jumps:
-                    if is_opposite_direcion(king_jump.direction, move.direction):
-                        pos_a = move.pos[-2]
-                        pos_b = move.pos[-1]
-                        pos_c = king_jump.pos[-1]
-                        if not ((pos_a > pos_b and pos_b > pos_c) or (pos_a < pos_b and pos_b < pos_c)):
-                            list_remove.append(king_jump)
-                for tmp_move in list_remove:
-                    king_jumps.remove(tmp_move)
+                # check whether king go over the same piece
+                king_jumps = self.remove_jump_over_twice_moves(king_jumps)
                 can_take_piece = len(king_jumps) >= 1
 
             if can_take_piece:
                 # 连吃 chain-taking
                 self.is_chain_taking = True
-                self.chain_taking_moves.append(move)
                 return GAME_CONTINUE
 
         self.change_player()
@@ -107,6 +97,15 @@ class Game():
             return True
         return False
 
+    def remove_jump_over_twice_moves(self, king_jumps):
+        chain_taking_pos = set([move.taken_pos for move in self.chain_taking_moves])
+        # check whether go over the same piece
+        list_jumps = []
+        for king_jump in king_jumps:
+            if not is_jump_over_twice(king_jump, chain_taking_pos):
+                list_jumps.append(king_jump)
+        return list_jumps
+
     def get_all_available_moves(self):
         # TODO Brazilian rule 有多吃多
         if self.available_moves is not None:
@@ -116,21 +115,7 @@ class Game():
             # last move's pos_to
             last_move = self.chain_taking_moves[-1]
             king_jumps, jump_moves, normal_moves = self.current_board.get_available_moves(last_move.pos[-1])
-            
-            # check whether go over the same piece
-            # 1. whether the opposite direction. if false, it's ok
-            # 2. if true, whether the pos is mono. if true, it's ok
-            # 3. if false, remove this move
-            list_remove = []
-            for king_jump in king_jumps:
-                if is_opposite_direcion(king_jump.direction, last_move.direction):
-                    pos_a = last_move.pos[-2]
-                    pos_b = last_move.pos[-1]
-                    pos_c = king_jump.pos[-1]
-                    if not ((pos_a > pos_b and pos_b > pos_c) or (pos_a < pos_b and pos_b < pos_c)):
-                        list_remove.append(king_jump)
-            for move in list_remove:
-                king_jumps.remove(move)
+            king_jumps = self.remove_jump_over_twice_moves(king_jumps)
 
         else:
             king_jumps, jump_moves, normal_moves = [], [], []
@@ -155,6 +140,7 @@ class Game():
             board_tmp = pickle.loads(pickle.dumps(self.current_board, -1))
             board_tmp.do_move(king_jump)
             tmp_king_jumps, tmp_jump_moves, _ = board_tmp.get_available_moves(king_jump.pos[-1])
+            tmp_king_jumps = self.remove_jump_over_twice_moves(tmp_king_jumps)
             can_take_piece = (len(tmp_king_jumps) + len(tmp_jump_moves)) >= 1
             if can_take_piece:
                 king_chain_takings.append(king_jump)

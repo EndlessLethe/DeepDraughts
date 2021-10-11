@@ -2,11 +2,12 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:31:25
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-10 00:17:53
+LastEditTime: 2021-10-11 10:44:40
 Description: 
 '''
 
 from pickle import FALSE
+import pickle
 import numpy as np
 
 # Const value
@@ -221,9 +222,12 @@ for x in VALID_POS_64:
 
 KHOP_POS_100 = dict()
 for x in VALID_POS_100:
-    KHOP_POS_100[x] = get_khop_pos(x, N_SIZE_10, CONST_N_GRID_100, VALID_POS_100, EDGE_POS_100)
+    KHOP_POS_100[x] = get_khop_pos(x, CONST_N_SIZE_10, CONST_N_GRID_100, VALID_POS_100, EDGE_POS_100)
 
 def get_valid_moves(VALID_POS, HOP_POS_ARGS, KHOP_POS):
+    '''
+	Compute all legal moves and assign an id.
+    '''    
     moves = []
     for x in VALID_POS:
         for key in HOP_POS_ARGS:
@@ -238,6 +242,29 @@ MOVE_MAP_100 = dict([(x, i) for i, x in enumerate(get_valid_moves(VALID_POS_100,
 
 N_ACTION_64 = len(MOVE_MAP_64)
 assert N_ACTION_64 == 280
+
+JUMP_OVER_POS = dict()
+def init_jump_over_pos(VALID_POS, HOP_POS_ARGS, KHOP_POS):
+    for x in VALID_POS:
+        for key in HOP_POS_ARGS:
+            list_jump_over = []
+            for k, next_pos in KHOP_POS[x][key].items():
+                if next_pos is None:
+                    break
+                JUMP_OVER_POS[(x, next_pos)] = pickle.loads(pickle.dumps(list_jump_over, -1))
+                list_jump_over.append(next_pos)
+
+init_jump_over_pos(VALID_POS_64, HOP_POS_ARGS, KHOP_POS_64)
+def is_jump_over_twice(move, chain_taking_pos):
+    for pos in chain_taking_pos:
+        if move.pos[-1] == pos:
+            return True
+
+    jump_over_pos = JUMP_OVER_POS[(move.pos[-2], move.pos[-1])]
+    for pos in jump_over_pos:
+        if pos in chain_taking_pos:
+            return True
+    return False
 
 def is_opposite_direcion(d1, d2):
     if (d1 == "left_upper" and d2 == "right_lower") or (d2 == "left_upper" and d1 == "right_lower"):
