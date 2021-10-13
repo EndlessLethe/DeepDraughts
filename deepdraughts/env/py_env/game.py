@@ -2,30 +2,32 @@
 Author: Zeng Siwei
 Date: 2021-09-11 16:20:41
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-11 11:07:28
+LastEditTime: 2021-10-14 00:22:39
 Description: 
 '''
 
 from .board import Board, Move
 from .env_utils import *
-import copy
+from .io_utils import parse_fen, game_to_fen
 import pickle
 
 class Game():
     def __init__(self, player1_name = "player1", player2_name = "player2", ngrid = CONST_N_GRID_64, rule = RUSSIAN_RULE) -> None:
+        # necessary part to describe a game
+        self.current_player = WHITE
+        self.current_board = Board(ngrid, rule)
+        self.current_board.init_default_board()
+        self.is_chain_taking = False
+        self.chain_taking_pos = []
+        self.n_king_move = 0
+
+        # non-necessary part
         self.move_path = []
         self.player1_name = player1_name
         self.player2_name = player2_name
-        self.current_board = Board(ngrid, rule)
-        self.current_player = WHITE
-
-        self.current_board.init_default_board()
-        self.available_moves = None
-        self.n_king_move = 0
-
-        self.is_chain_taking = False
         self.chain_taking_moves = []
         self.game_status = self.is_over()
+        self.available_moves = None
 
     def reset_available_moves(self):
         self.available_moves = None
@@ -33,11 +35,13 @@ class Game():
     def reset_chain_taking_states(self):
         self.is_chain_taking = False
         self.chain_taking_moves = []
+        self.chain_taking_pos = []
         
     def do_move(self, move):
         self.current_board.do_move(move)
         self.move_path.append(move)
         self.chain_taking_moves.append(move)
+        self.chain_taking_pos.append(move.taken_pos)
         self.reset_available_moves()
         
         if move.move_type == MEN_MOVE:
@@ -98,7 +102,7 @@ class Game():
         return False
 
     def remove_jump_over_twice_moves(self, king_jumps):
-        chain_taking_pos = set([move.taken_pos for move in self.chain_taking_moves])
+        chain_taking_pos = set(self.chain_taking_pos)
         # check whether go over the same piece
         list_jumps = []
         for king_jump in king_jumps:
@@ -170,6 +174,37 @@ class Game():
             for str_move in str_moves:
                 move = Move.init_by_str(str_move)
                 print(str(move))
+
+    def to_fen(self):
+        current_player = "W" if self.current_player == WHITE else "B"
+        is_chain_taking = self.is_chain_taking
+        chain_taking_pos = to_readable_pos_list(self.chain_taking_pos)
+        whites_pos, blacks_pos, whites_isking, blacks_isking = [], [], [], []
+        sorted_items = sorted(self.current_board.pieces.items(), key=lambda item:item[0])
+        for pos, piece in sorted_items:
+            if piece.player == WHITE:
+                whites_pos.append(pos)
+                whites_isking.append(piece.isking)
+            elif piece.player == BLACK:
+                blacks_pos.append(pos)
+                blacks_isking.append(piece.isking)
+        whites_pos = to_readable_pos_list(whites_pos)
+        blacks_pos = to_readable_pos_list(blacks_pos)
+        return game_to_fen(current_player, whites_pos, blacks_pos, whites_isking, 
+            blacks_isking, is_chain_taking, chain_taking_pos)
+
+    @classmethod
+    def load_fen(cls, fen):
+        current_player, whites_pos, blacks_pos, whites_isking, \
+                blacks_isking, is_chain_taking, chain_taking_pos = parse_fen(fen)
+        game = Game()
+        game.current_player = WHITE if current_player.lower() == "w" else BLACK
+        game.is_chain_taking = is_chain_taking
+        game.chain_taking_pos = norm_pos_list(chain_taking_pos)
+        whites_pos = norm_pos_list(whites_pos)
+        blacks_pos = norm_pos_list(blacks_pos)
+        game.current_board.set_board(whites_pos, blacks_pos, whites_isking, blacks_isking)
+        return game
 
     @classmethod
     def load_pickled_game(cls, filepath):

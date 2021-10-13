@@ -2,11 +2,10 @@
 Author: Zeng Siwei
 Date: 2021-09-11 15:56:20
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-11 11:10:03
+LastEditTime: 2021-10-14 00:24:30
 Description: 
 '''
 
-from .env import game_status_to_str
 import pygame as pg
 import time
 from .env import *
@@ -119,10 +118,10 @@ class GUI():
                 if pos == move.pos[-1]:
                     game_status = self.game.do_move(move)
                     print(str(self.game))
+                    print(self.game.to_fen())
                     
                     # reset last action
                     self.reset_drawing()
-
                     return game_status
 
             # reset last action

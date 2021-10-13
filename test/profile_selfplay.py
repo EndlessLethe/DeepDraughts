@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-10-08 15:45:05
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-10 00:50:03
+LastEditTime: 2021-10-11 18:07:46
 Description: 
 '''
 
@@ -15,41 +15,8 @@ from deepdraughts.mcts_alphazero import MCTSPlayer_alphazero as MCTS_alphazero
 from deepdraughts.net_pytorch import Model
 import time
 import datetime
+from .test_game_collector import test_alphazero_selfplay, test_alphazero_selfplay
 
-def test_pure_mcts_selfplay(n_cores = 8, batch_size = 20, filename = "pure_mcts_selfplay"):
-    dir_file = "./savedata/"
-    now_time = datetime.datetime.now().strftime("%Y%m%d_%H%M")
-    filepath = dir_file + filename + "_" + now_time +".pkl"
-
-    gc = GameCollector()
-    mcts_player = MCTS_pure(c_puct=5, n_playout=1000)
-
-    start_time = time.time()
-    if n_cores == 1:
-        gc.collect_selfplay(mcts_player, batch_size, filepath=filepath)
-    else:
-        gc.parallel_collect_selfplay(n_cores = n_cores, shared_model = None, policy = mcts_player, batch_size = batch_size, filepath = filepath)
-    end_time = time.time()
-    print("Paralleled " + str(batch_size) + " selfplay with " + str(n_cores) + " core:", end_time-start_time, "s")
-
-
-def test_alphazero_selfplay(n_cores = 8, batch_size = 20, filename = "alphazero_selfplay"):
-    dir_file = "./savedata/"
-    now_time = datetime.datetime.now().strftime("%Y%m%d_%H%M")
-    filepath = dir_file + filename + "_" + now_time +".pkl"
-
-    gc = GameCollector()
-    env_args = get_env_args()
-    model = Model(env_args, use_gpu=False)
-    mcts_player = MCTS_alphazero(model.policy_value_fn, c_puct=5, n_playout=1000, selfplay=True)
-
-    start_time = time.time()
-    if n_cores == 1:
-        gc.collect_selfplay(mcts_player, batch_size, filepath=filepath)
-    else:
-        gc.parallel_collect_selfplay(n_cores = n_cores, shared_model = model.policy_value_net, policy = mcts_player, batch_size = batch_size, filepath = filepath)
-    end_time = time.time()
-    print("Paralleled " + str(batch_size) + " selfplay with " + str(n_cores) + " core:", end_time-start_time, "s")
 
 if __name__ == "__main__":
     import cProfile, pstats, io

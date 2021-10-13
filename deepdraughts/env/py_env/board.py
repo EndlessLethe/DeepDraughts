@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:36:26
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-10 00:38:05
+LastEditTime: 2021-10-13 19:13:00
 Description: 
 '''
 
@@ -31,10 +31,17 @@ class Board():
         self.piece_moves.clear()
 
     def set_board(self, whites_pos, blacks_pos, whites_isking = None, blacks_isking = None):
-        whites_pos = norm_pos_list(whites_pos)
-        blacks_pos = norm_pos_list(blacks_pos)
+        '''
+        Input must be computer index. See more details in env_utils.py
+
+        Usage:
+            whites_pos = norm_pos_list(whites_pos)
+            blacks_pos = norm_pos_list(blacks_pos)
+            set_board(whites_pos, blacks_pos)
+        '''        
         if (self.check_pos_list(whites_pos) and self.check_pos_list(blacks_pos)) == False:
-            raise Exception("Invaid pos list")
+            raise Exception("Invaid pos list.")
+        self.init_empty_board()
         if whites_isking is None:
             whites_isking = [False] * len(whites_pos)
         if blacks_isking is None:

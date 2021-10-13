@@ -115,10 +115,8 @@ class MCTSPlayer_alphazero(MCTSPlayer):
                     p=0.75*probs + 0.25*np.random.dirichlet(0.3*np.ones(len(probs)))
                 )
                 # update the root node and reuse the search tree
-                # self.mcts.update_with_move(move)
-
-                # don't reuse the search tree, until reverse_score() function is implemented.
-                self.mcts.update_with_move(-1)
+                self.mcts.update_with_move(move)
+                self.mcts.clear()
             else:
                 # with the default temp=1e-3, it is almost equivalent
                 # to choosing the move with the highest prob
@@ -128,7 +126,8 @@ class MCTSPlayer_alphazero(MCTSPlayer):
             return move, move_probs
     
         elif len(sensible_moves) == 1:
-            self.mcts.update_with_move(-1)
+            self.mcts.update_with_move(sensible_moves[0])
+            self.mcts.clear()
             return sensible_moves[0], actions2vec(sensible_moves, [1])
         else:
             print("WARNING: the board is full")

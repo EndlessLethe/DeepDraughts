@@ -2,11 +2,10 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:31:25
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-11 10:44:40
+LastEditTime: 2021-10-13 23:37:24
 Description: 
 '''
 
-from pickle import FALSE
 import pickle
 import numpy as np
 
@@ -17,7 +16,7 @@ CONST_N_GRID_144 = 144
 CONST_N_SIZE_8 = 8
 CONST_N_SIZE_10 = 10
 CONST_STR_RUSSIAN = "russian"
-CONST_ASCII_LOWER_A = 48
+CONST_ASCII_LOWER_A = 97
 
 # Basic code
 # For training AI, use 1 and -1
@@ -35,11 +34,10 @@ CURRENT_RULE = None
 CURRENT_BORAD = None
 
 def set_rule(rule = CONST_STR_RUSSIAN):
+    if rule not in (CONST_STR_RUSSIAN):
+        raise Exception("Rule must be russian.")
     global CURRENT_RULE
-    if rule.lower() == CONST_STR_RUSSIAN:
-        CURRENT_RULE = RUSSIAN_RULE
-    else:
-        CURRENT_RULE = BRAZILIAN_RULE
+    CURRENT_RULE = rule
 
 def set_board(boardsize = CONST_N_GRID_64):
     if boardsize not in (CONST_N_GRID_64, CONST_N_GRID_100, CONST_N_GRID_144):
@@ -108,6 +106,28 @@ GUI_WAIT = 21
 GUI_LEFTCLICK = 22
 GUI_RIGHTCLICK = 23
 
+def pos2coord(pos, nsize, origin = "left_lower"):
+    '''
+	Coord is format as Chess.
+    (1, 1) is left lower corner.
+    '''    
+    if origin == "left_upper":
+        row = int(pos / nsize) + 1
+    else:
+        row = nsize - int(pos / nsize)
+    col = pos % nsize + 1
+    return row, col
+
+def coord2pos(row, col, nsize, origin = "left_lower"):
+    row -= 1
+    col -= 1
+
+    if origin == "left_upper":
+        idx = row * nsize + col
+    else:
+        idx = (nsize-1-row) * nsize + col 
+    return idx
+
 # Player State code
 HUMAN_PLAYER = 30
 AI_PLAYER = 31
@@ -117,24 +137,25 @@ DRL_PLAYER = 34
 
 
 # Var Tables
-KING_POS_WHITE_64 = set([2, 4, 6, 8])
-KING_POS_BLACK_64 = set([57, 59, 61, 63])
+KING_POS_WHITE_64 = set([1, 3, 5, 7])
+KING_POS_BLACK_64 = set([56, 58, 60, 62])
 
 KING_POS_WHITE_100 = set([])
 KING_POS_BLACK_100 = set([])
 
-DEFAULT_POS_WHITE_64 = [41, 43, 45, 47, 50, 52, 54, 56, 57, 59, 61, 63]
-DEFAULT_POS_BLACK_64 = [2, 4, 6, 8, 9, 11, 13, 15, 18, 20, 22, 24]
+DEFAULT_POS_WHITE_64 = [40, 42, 44, 46, 49, 51, 53, 55, 56, 58, 60, 62]
+DEFAULT_POS_BLACK_64 = [1, 3, 5, 7, 8, 10, 12, 14, 17, 19, 21, 23]
 
 DEFAULT_POS_WHITE_100 = []
 DEFAULT_POS_BLACK_100 = []
 
-VALID_POS_64 = set([2, 4, 6, 8, 9, 11, 13, 15, 18, 20, 22, 24, 
-                    25, 27, 29, 31, 34, 36, 38, 40,
-                    41, 43, 45, 47, 50, 52, 54, 56, 57, 59, 61, 63])
+_VALID_POS_64 = [1, 3, 5, 7, 8, 10, 12, 14, 17, 19, 21, 23, 
+                    24, 26, 28, 30, 33, 35, 37, 39,
+                    40, 42, 44, 46, 49, 51, 53, 55, 56, 58, 60, 62]
+VALID_POS_64 = set(_VALID_POS_64)
 VALID_POS_100 = set([])
 
-EDGE_POS_64 = set([9, 25, 41, 57, 8, 24, 40, 56])
+EDGE_POS_64 = set([8, 24, 40, 56, 7, 23, 39, 55])
 EDGE_POS_100 = set([])
 
 def KING_PROMOTION_POS():
@@ -168,11 +189,6 @@ def EDGE_POS():
         return EDGE_POS_100
     else:
         raise Exception("Board size error!")
-
-'''
-    Position function.
-
-'''
 
 HOP_POS_ARGS = {
     "left_upper" : (-1, -1), 
@@ -277,54 +293,56 @@ def is_opposite_direcion(d1, d2):
     Position format function.
 
     Main format for piece position:
-    1. idx. Starting index from left upper corner with number 1.
-    2. string. Used in chess, the format is indexed from left lower corner. 
+    1. computer idx. Starting index from left upper corner with number 1.
+    2. human idx.
+    3. chess string. Used in chess, the format is indexed from left lower corner. 
         And each row is described by char 'A' to 'H'.
-    3. tuple(x, y). The origin is left lower corner by default, to keep the same with chess format.
-		
 '''
 
+COMPUTER_ID_TO_HUMAN_ID = dict([(x, i) for i, x in enumerate(_VALID_POS_64)])
 
+def get_chess_str():
+    chess_str = []
+    for i in range(8, 0, -1):
+        for j in range(8):
+            if coord2pos(i, j+1, CONST_N_SIZE_8) in VALID_POS_64:
+                chess_str.append(chr(CONST_ASCII_LOWER_A+j).upper()+str(i))
+    return chess_str
+HUMAN_ID_TO_CHESS_STR = get_chess_str()
+CHESS_STR_TO_HUMAN_ID = dict([(x, i) for i, x in enumerate(HUMAN_ID_TO_CHESS_STR)])
 
-def norm_pos(pos):
+def human_id_to_computer_id(human_id):
+    return _VALID_POS_64[human_id]
+
+def chess_str_to_human_id(chess_str):
+    return CHESS_STR_TO_HUMAN_ID[chess_str]
+
+def computer_id_to_human_id(computer_id):
+    return COMPUTER_ID_TO_HUMAN_ID[computer_id]
+
+def human_id_to_chess_str(human_id):
+    return HUMAN_ID_TO_CHESS_STR[human_id]
+
+def computer_id_to_chess_str(computer_id):
+    return human_id_to_chess_str(computer_id_to_human_id(computer_id))
+
+def chess_str_to_computer_id(chess_str):
+    return human_id_to_computer_id(chess_str_to_human_id(chess_str.upper()))
+
+def read_input_pos(pos):
     if isinstance(pos, int): # idx format
-        return pos
+        return human_id_to_computer_id(pos)
     if isinstance(pos, str): # 64 format like C3 and D4
-        return POS_MAP_64[pos.lower()]
-    if isinstance(pos, (list, tuple)): # (x, y) format, started from 1
-        # TODO
-        # return POS_MAP_64[chr(CONST_ASCII_LOWER_A+pos[0]-1)+str(pos[1])] 
-        return 
+        return chess_str_to_computer_id(pos)
     
 def norm_pos_list(iter):
-    return [norm_pos(x) for x in iter]
+    return [read_input_pos(x) for x in iter]
 
-def pos2coord(pos, nsize, origin = "left_lower"):
-    '''
-	Coord is format as Chess.
-    (1, 1) is left lower corner.
-    '''    
-    pos -= 1
-    if origin == "left_upper":
-        row = int(pos / nsize) + 1
+def to_readable_pos_list(iter):
+    if CURRENT_BORAD == CONST_N_GRID_64:
+        return [computer_id_to_chess_str(x) for x in iter]
     else:
-        row = nsize - int(pos / nsize)
-    col = pos % nsize + 1
-    return row, col
-
-def coord2pos(row, col, nsize, origin = "left_lower"):
-    row -= 1
-    col -= 1
-
-    if origin == "left_upper":
-        idx = row * nsize + col
-    else:
-        idx = (nsize-1-row) * nsize + col 
-    return idx + 1
-
-def coord2fstr():
-    # TODO
-    pass
+        return [computer_id_to_human_id(x) for x in iter]
 
 
 '''

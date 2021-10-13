@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-17 13:36:24
 LastEditors: Zeng Siwei
-LastEditTime: 2021-09-24 21:52:42
+LastEditTime: 2021-10-11 15:48:14
 Description: 
 '''
 
@@ -17,6 +17,7 @@ import configparser
 def run_human_play(config):
     play_with = config.get("running_args", "play_with")
     play_using_white = config.getboolean("running_args", "play_using_white")
+    n_playout = config.getint("running_args", "n_playout")
     if play_with == "human":
         play_with_human()
     elif play_with == "alphazero":
@@ -24,9 +25,9 @@ def run_human_play(config):
         name = config.get("model_args", "name")
         use_gpu = config.getboolean("model_args", "use_gpu")
         l2_const = config.getfloat("model_args", "l2_const")
-        play_with_alphazero(play_using_white, checkpoint, name, use_gpu, l2_const)
+        play_with_alphazero(play_using_white, n_playout, checkpoint, name, use_gpu, l2_const)
     else:
-        play_with_pureMCTS(play_using_white)
+        play_with_pureMCTS(play_using_white, n_playout)
 
 
 def run_train_pipline(config):
@@ -50,7 +51,7 @@ def play_with_human():
     gui = GUI()
     gui.run()
 
-def play_with_alphazero(play_using_white = True, checkpoint = "", 
+def play_with_alphazero(play_using_white = True, n_playout = 1000, checkpoint = "", 
             name = "default", use_gpu = False, l2_const = 1e-4):
 
     gui = GUI()
@@ -60,15 +61,15 @@ def play_with_alphazero(play_using_white = True, checkpoint = "",
     else:
         model = Model.load(checkpoint)
     
-    mcts_player = MCTS_alphazero(model.policy_value_fn, c_puct=5, n_playout=1000, selfplay=False)
+    mcts_player = MCTS_alphazero(model.policy_value_fn, c_puct=5, n_playout=n_playout, selfplay=False)
     if play_using_white:
         gui.run(player_black=AI_PLAYER, policy_black=mcts_player)
     else:
         gui.run(player_white=AI_PLAYER, policy_white=mcts_player)
 
-def play_with_pureMCTS(play_using_white = True):
+def play_with_pureMCTS(play_using_white = True, n_playout = 1600):
     gui = GUI()
-    mcts_player = MCTS_pure(c_puct=5, n_playout=1600)
+    mcts_player = MCTS_pure(c_puct=5, n_playout=n_playout)
     if play_using_white:
         gui.run(player_black=AI_PLAYER, policy_black=mcts_player)
     else:

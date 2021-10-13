@@ -2,14 +2,13 @@
 Author: Zeng Siwei
 Date: 2021-09-15 16:32:59
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-09 19:57:26
+LastEditTime: 2021-10-14 00:14:41
 Description: 
 '''
 
 from .env import Game, game_status_to_str, game_is_drawn, game_is_over, game_winner
 import numpy as np
 import pickle
-import copy
 import time
 
 

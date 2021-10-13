@@ -109,6 +109,13 @@ class TreeNode(object):
     def is_root(self):
         return self._parent is None
 
+    def clear(self):
+        self._Q = 0
+        self._n_visits = 0
+        self._u = 0
+        for node in self._children.values():
+            node.clear()
+
 
 class MCTS(object):
     """A simple implementation of Monte Carlo Tree Search."""
@@ -223,6 +230,9 @@ class MCTS(object):
             self._root._parent = None
         else:
             self._root = TreeNode(None, 1.0)
+
+    def clear(self):
+        self._root.clear()
 
     def __str__(self):
         return "MCTS"

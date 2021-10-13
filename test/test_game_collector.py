@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-15 23:02:07
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-09 01:02:29
+LastEditTime: 2021-10-12 17:14:18
 Description: 
 '''
 
@@ -17,32 +17,27 @@ from deepdraughts.net_pytorch import Model
 import time
 import datetime
 
-def test_pure_mcts_selfplay(filename):
+
+def test_pure_mcts_selfplay(n_cores = 8, batch_size = 20, filename = "pure_mcts_selfplay"):
     dir_file = "./savedata/"
     now_time = datetime.datetime.now().strftime("%Y%m%d_%H%M")
     filepath = dir_file + filename + "_" + now_time +".pkl"
 
     gc = GameCollector()
     mcts_player = MCTS_pure(c_puct=5, n_playout=1000)
-    
-    # start_time = time.time()
-    # gc.collect_selfplay(mcts_player, batch_size, filepath=filepath)
-    # end_time = time.time()
-    # print("Non parallel " + str(batch_size) + " selfplay:", end_time-start_time, "s")
-    # # Non parallel 2 selfplay: 388.1669747829437 s
 
     start_time = time.time()
-    gc.parallel_collect_selfplay(n_cores = 8, shared_model = None, 
-                policy = mcts_player, batch_size = 20, filepath = filepath)
+    if n_cores == 1:
+        gc.collect_selfplay(mcts_player, batch_size, filepath=filepath)
+        # repeat 10 time, avg time: 64.95348958969116 version: stable1.1
+    else:
+        gc.parallel_collect_selfplay(n_cores = n_cores, shared_model = None, policy = mcts_player, batch_size = batch_size, filepath = filepath)
+        # repeat 3 time (8c20b), avg time: 357.5275936126709 version: stable1.1
     end_time = time.time()
-    print("Paralleled " + str(20) + " selfplay with " + str(8) + " core:", end_time-start_time, "s")
-    # Paralleled 20 selfplay with 8 core: 1189.294320821762 s
-    # Paralleled 20 selfplay with 8 core: 952.8826515674591 s
-    # Paralleled 20 selfplay with 8 core: 1013.8065795898438 s using cython
-    # Paralleled 20 selfplay with 8 core: 492.502724647522 s using pickle for copying
+    print("Paralleled " + str(batch_size) + " selfplay with " + str(n_cores) + " core:", end_time-start_time, "s")
+    return end_time-start_time
 
-
-def test_alphazero_selfplay(filename):
+def test_alphazero_selfplay(n_cores = 8, batch_size = 20, filename = "alphazero_selfplay"):
     dir_file = "./savedata/"
     now_time = datetime.datetime.now().strftime("%Y%m%d_%H%M")
     filepath = dir_file + filename + "_" + now_time +".pkl"
@@ -52,26 +47,18 @@ def test_alphazero_selfplay(filename):
     model = Model(env_args, use_gpu=False)
     mcts_player = MCTS_alphazero(model.policy_value_fn, c_puct=5, n_playout=1000, selfplay=True)
 
-    # batch_size = 1
-    # start_time = time.time()
-    # with torch.no_grad():
-    #     gc.collect_selfplay(mcts_player, batch_size, filepath= filepath)
-    # end_time = time.time()
-    # print("Non parallel " + str(batch_size) + " selfplay:", end_time-start_time, "s")
-    # Non parallel 2 selfplay: 922.9081609249115 s
-    # Non parallel 1 selfplay: 486.6477029323578 s
-    # Non parallel 1 selfplay: 455.86457991600037 s using cython
-    # Non parallel 1 selfplay: 304.20654487609863 s using gpu
-
-    batch_size = 20
-    n_cores = 8
     start_time = time.time()
-    gc.parallel_collect_selfplay(n_cores = n_cores, shared_model = model.policy_value_net, policy = mcts_player, batch_size = batch_size, filepath = filepath)
+    if n_cores == 1:
+        gc.collect_selfplay(mcts_player, batch_size, filepath=filepath)
+        # repeat 10 time, avg time: 241.05693390369416 version: stable1.1
+    else:
+        gc.parallel_collect_selfplay(n_cores = n_cores, shared_model = model.policy_value_net, policy = mcts_player, batch_size = batch_size, filepath = filepath)
+        # repeat 3 time (8c20b), avg time: 1725.8509844144185 version: stable1.1
+
     end_time = time.time()
     print("Paralleled " + str(batch_size) + " selfplay with " + str(n_cores) + " core:", end_time-start_time, "s")
-    # Paralleled 20 selfplay with 8 core: 2545.431615114212 s
-    # Paralleled 20 selfplay with 4 core: 3394.675544023514 s
-    # Paralleled 20 selfplay with 8 core: 3835.0908370018005 s
+    return end_time-start_time
+
 
 def test_load_selfplay(filepath):
     gc = GameCollector()
@@ -100,9 +87,15 @@ def test_eval():
 
 if __name__ == "__main__": 
     dir_file = "./savedata/"
-    # test_pure_mcts_selfplay("test_selfplay1")    
-
     # torch.multiprocessing.set_start_method("spawn")
-    # test_alphazero_selfplay("test_selfplay2")
-    test_load_selfplay(dir_file+"test_selfplay1_20211009_0043.pkl")
+
+    # total_time = 0
+    # for i in range(3):
+    #     # total_time += test_pure_mcts_selfplay(8, 20)
+    #     total_time += test_alphazero_selfplay(8, 20)
+    # print(total_time, total_time/3)
+
+    # test_pure_mcts_selfplay(1, 1)
+    test_alphazero_selfplay(8, 20)
+    # test_load_selfplay(dir_file+"alphazero_selfplay_20211012_1705.pkl")
     # test_eval()
