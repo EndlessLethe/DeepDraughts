@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:31:25
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-13 23:37:24
+LastEditTime: 2021-10-19 19:26:41
 Description: 
 '''
 
@@ -17,6 +17,14 @@ CONST_N_SIZE_8 = 8
 CONST_N_SIZE_10 = 10
 CONST_STR_RUSSIAN = "russian"
 CONST_ASCII_LOWER_A = 97
+
+# endgame database token
+CONST_TOKEN_WIN = "WIN"
+CONST_TOKEN_LOSE = "LOSE"
+CONST_TOKEN_DRAW = "DRAW"
+CONST_TOKEN_UNKNOWN = "UNKNOWN"
+DICT_CONST_RESULT = dict((x, i) for i, x in enumerate([CONST_TOKEN_WIN, CONST_TOKEN_LOSE, CONST_TOKEN_DRAW, CONST_TOKEN_UNKNOWN]))
+INF = 99999
 
 # Basic code
 # For training AI, use 1 and -1
@@ -338,11 +346,14 @@ def read_input_pos(pos):
 def norm_pos_list(iter):
     return [read_input_pos(x) for x in iter]
 
-def to_readable_pos_list(iter):
+def to_readable_pos(pos):
     if CURRENT_BORAD == CONST_N_GRID_64:
-        return [computer_id_to_chess_str(x) for x in iter]
+        return computer_id_to_chess_str(pos)
     else:
-        return [computer_id_to_human_id(x) for x in iter]
+        return computer_id_to_human_id(pos)
+
+def to_readable_pos_list(iter):
+    return [to_readable_pos(x) for x in iter]
 
 
 '''
@@ -400,3 +411,15 @@ def state2vec(state):
         vec_state[i+2] = move.taken_pos-1
     vec_state[-1] = state.n_king_move
     return vec_board, vec_state
+
+
+'''
+
+    Endgame database
+		
+'''
+
+with open("one_versus_two.pkl", "rb") as fp:
+    ENDGAMES = pickle.load(fp)
+K_ENDGAME_PIECE = 4
+USE_ENDGAME_DATABASE = False

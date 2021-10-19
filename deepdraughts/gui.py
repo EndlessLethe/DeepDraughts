@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 15:56:20
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-14 00:24:30
+LastEditTime: 2021-10-17 12:07:18
 Description: 
 '''
 
@@ -162,6 +162,12 @@ class GUI():
         font = pg.font.Font(None, 36)
         
         running = True
+        pieces = self.game.current_board.get_pieces()
+        pos_list = [x.pos for x in pieces]
+        player_list = [x.player for x in pieces]
+        isking_list = [x.isking for x in pieces]
+        available_moves = self.game.get_all_available_moves()
+
         while running:
             if self.is_human_playing(player_white, player_black):
                 for event in pg.event.get():

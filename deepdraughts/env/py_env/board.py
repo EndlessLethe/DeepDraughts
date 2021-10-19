@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:36:26
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-13 19:13:00
+LastEditTime: 2021-10-14 12:41:13
 Description: 
 '''
 
@@ -42,9 +42,9 @@ class Board():
         if (self.check_pos_list(whites_pos) and self.check_pos_list(blacks_pos)) == False:
             raise Exception("Invaid pos list.")
         self.init_empty_board()
-        if whites_isking is None:
+        if whites_isking is None or len(whites_isking) == 0:
             whites_isking = [False] * len(whites_pos)
-        if blacks_isking is None:
+        if blacks_isking is None or len(blacks_isking) == 0:
             blacks_isking = [False] * len(blacks_pos)
 
         for pos, isking in zip(whites_pos, whites_isking):

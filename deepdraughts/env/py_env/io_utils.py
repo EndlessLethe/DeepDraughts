@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-10-13 11:03:14
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-14 00:13:55
+LastEditTime: 2021-10-17 16:17:06
 Description: 
 '''
 
@@ -11,20 +11,21 @@ import re
 def parse_fen(fen):
     '''
     Based on FMJD FEN format, game states is added at the end of FEN string.
-    [CHAINTAKING][[SQUARE_NUM][,]...]: is_chain_taking and chain_taking_pos
+    [CHAINTAKING][SQUARE_NUM][[SQUARE_NUM][,]...]: is_chain_taking, last_pos and chain_taking_pos
     
-    [TURN]:[COLOUR1][[K][SQUARE_NUM][,]...]:[COLOUR2][[K][SQUARE_NUM][,]...].[CHAINTAKING][[SQUARE_NUM][,]...]
+    [TURN]:[COLOUR1][[K][SQUARE_NUM][,]...]:[COLOUR2][[K][SQUARE_NUM][,]...].[CHAINTAKING][SQUARE_NUM],[[SQUARE_NUM][,]...]
 
     More details about FEN: http://pdn.fmjd.org/fen.html
     
     '''
     tokens = fen.split(".")
     is_chain_taking = False
+    last_piece_pos = None
     chain_taking_pos = []
     if len(tokens) == 2:
-        is_chain_taking, chain_taking_pos = _parse_fen_chain_taking(tokens[1])
+        is_chain_taking, last_piece_pos, chain_taking_pos = _parse_fen_chain_taking(tokens[1])
     current_player, whites_pos, blacks_pos, whites_isking, blacks_isking = _parse_fen_pos(tokens[0])
-    return current_player, whites_pos, blacks_pos, whites_isking, blacks_isking, is_chain_taking, chain_taking_pos
+    return current_player, whites_pos, blacks_pos, whites_isking, blacks_isking, is_chain_taking, last_piece_pos, chain_taking_pos
 
 
 def _parse_fen_pos(fen):
@@ -79,16 +80,16 @@ def _parse_fen_pos(fen):
 
 def _parse_fen_chain_taking(fen):
     if len(fen) <= 1:
-        return False, []
+        return False, None, []
     is_change_taking = int(fen[0])
     if ord(fen[1]) >= 65: # ord("A") 65, ord("0") 48, ord("a") 97
         pos = [x for x in fen[1:].split(",")]
     else:
         pos = [int(x) for x in fen[1:].split(",")]
-    return is_change_taking, pos
+    return is_change_taking, pos[0], pos[1:]
 
 def game_to_fen(current_player, whites_pos, blacks_pos, whites_isking, 
-            blacks_isking, is_chain_taking, chain_taking_pos):
+            blacks_isking, is_chain_taking, last_piece_pos, chain_taking_pos):
     fen = current_player
     white_pieces, black_pieces = [], []
     for i, pos in enumerate(whites_pos):
@@ -100,8 +101,10 @@ def game_to_fen(current_player, whites_pos, blacks_pos, whites_isking,
     fen += ":B"
     fen += ",".join(black_pieces)
     fen += "."
-    fen += str(int(is_chain_taking))
-    fen += ",".join(chain_taking_pos)
+    if is_chain_taking:
+        fen += str(int(is_chain_taking))
+        fen += last_piece_pos + ","
+        fen += ",".join(chain_taking_pos)
     return fen
 
 
@@ -114,10 +117,12 @@ if __name__ == "__main__":
     FEN_5 = "B:B7,11,13,17,20,22,24,30,41:W26,28,29,31,32,33,38,40,48."  # after 30-35 white wins
     FEN_5 = "B:B7,11,13,17,20,22,24,30,41:W26,28,29,31,32,33,38,40,48."  # after 30-35 white wins
     FEN_6 = "W:WA1,C3:BD4"
-    parse_fen(FEN_INITIAL)
-    parse_fen(FEN_1)
-    parse_fen(FEN_2)
-    parse_fen(FEN_3)
-    parse_fen(FEN_4)
-    parse_fen(FEN_5)
-    parse_fen(FEN_6)
+    FEN_7 = "W:WKA1,C3:BD4"
+    print(parse_fen(FEN_INITIAL))
+    print(parse_fen(FEN_1))
+    print(parse_fen(FEN_2))
+    print(parse_fen(FEN_3))
+    print(parse_fen(FEN_4))
+    print(parse_fen(FEN_5))
+    print(parse_fen(FEN_6))
+    print(parse_fen(FEN_7))

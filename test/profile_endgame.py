@@ -1,37 +1,27 @@
 '''
 Author: Zeng Siwei
-Date: 2021-10-08 15:45:05
+Date: 2021-10-19 19:24:17
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-18 01:09:26
+LastEditTime: 2021-10-19 20:51:11
 Description: 
 '''
 
-# from deepdraughts.env.cython_env import * # recommand, faster when playing with AI.
-from deepdraughts.env.py_env import *
-from deepdraughts.gui import GUI
-from deepdraughts.game_collector import GameCollector
-from deepdraughts.mcts_pure import MCTSPlayer as MCTS_pure
-from deepdraughts.mcts_alphazero import MCTSPlayer_alphazero as MCTS_alphazero
-from deepdraughts.net_pytorch import Model
-import time
-import datetime
-from test_game_collector import test_pure_mcts_selfplay, test_alphazero_selfplay
-
+from deepdraughts.endgame.generator import *
 
 if __name__ == "__main__":
-    import cProfile, pstats, io
+    import cProfile, pstats, io, datetime
 
     pr = cProfile.Profile()
     pr.enable()
 
     # profile function
-    test_pure_mcts_selfplay(1, 1)
-    # test_alphazero_selfplay(1, 1)
+    # generate_two_kings_versus_one_king()
+    generate_two_versus_two()
 
     pr.disable()
 
     dir_file = "./savedata/"
-    filename = "selfplay_profile_1_1"
+    filename = "endgame_profile_2v2"
     now_time = datetime.datetime.now().strftime("%Y%m%d_%H%M")
     filepath = dir_file + filename + "_" + now_time +".prof"
     pr.dump_stats(filepath)

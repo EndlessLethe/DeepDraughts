@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 16:20:41
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-14 00:22:39
+LastEditTime: 2021-10-19 21:18:51
 Description: 
 '''
 
@@ -12,12 +12,14 @@ from .io_utils import parse_fen, game_to_fen
 import pickle
 
 class Game():
-    def __init__(self, player1_name = "player1", player2_name = "player2", ngrid = CONST_N_GRID_64, rule = RUSSIAN_RULE) -> None:
+    def __init__(self, player1_name = "player1", player2_name = "player2", ngrid = CONST_N_GRID_64, rule = RUSSIAN_RULE, auto_init = True) -> None:
         # necessary part to describe a game
         self.current_player = WHITE
         self.current_board = Board(ngrid, rule)
-        self.current_board.init_default_board()
+        if auto_init:
+            self.current_board.init_default_board()
         self.is_chain_taking = False
+        self.chain_taking_piece_pos = None
         self.chain_taking_pos = []
         self.n_king_move = 0
 
@@ -26,7 +28,7 @@ class Game():
         self.player1_name = player1_name
         self.player2_name = player2_name
         self.chain_taking_moves = []
-        self.game_status = self.is_over()
+        self.game_status = self.query_game_status()
         self.available_moves = None
 
     def reset_available_moves(self):
@@ -36,12 +38,11 @@ class Game():
         self.is_chain_taking = False
         self.chain_taking_moves = []
         self.chain_taking_pos = []
+        self.chain_taking_piece_pos = None
         
     def do_move(self, move):
         self.current_board.do_move(move)
         self.move_path.append(move)
-        self.chain_taking_moves.append(move)
-        self.chain_taking_pos.append(move.taken_pos)
         self.reset_available_moves()
         
         if move.move_type == MEN_MOVE:
@@ -49,11 +50,14 @@ class Game():
         else:
             self.n_king_move += 1
 
-
         # check whether in chain-taking
         # only when chain-taking, keep current player playing
         if move.take_piece:
             # check whether the player can take another piece after this move.
+            self.chain_taking_moves.append(move)
+            self.chain_taking_pos.append(move.taken_pos)
+            self.chain_taking_piece_pos = move.pos[-1]
+
             can_take_piece = False
             king_jumps, jumps, _ = self.current_board.get_available_moves(move.pos[-1])
 
@@ -71,11 +75,56 @@ class Game():
 
         self.change_player()
         self.reset_chain_taking_states()
-        self.game_status = self.is_over()
+        self.game_status = self.query_game_status()
         return self.game_status
         
+    def query_game_status(self):
+        '''
+        Return current game status. 
+
+        Note: 
+            This function doesn't return True or False.
+            Returns may be different from is_over or is_drawn, 
+                due to the applied endgame database.
+
+        Usage:
+            game_status = game.query_game_status()
+            is_over = game_is_over(game_status)
+            is_drawn = game_is_drawn(game_status)
+            winner = game_winner(game_status)
+
+        '''
+        if USE_ENDGAME_DATABASE and self.current_board.number_of_pieces() <= K_ENDGAME_PIECE:
+            fen = self.to_fen()
+            if fen in ENDGAMES:
+                status, n_moves = ENDGAMES[fen]
+                if status == CONST_TOKEN_DRAW:
+                    return GAME_DRAW
+                elif status == CONST_TOKEN_WIN:
+                    return GAME_WHITE_WIN
+                elif status == CONST_TOKEN_LOSE:
+                    return GAME_BLACK_WIN
+
+        if not self.has_available_moves():
+            return GAME_WHITE_WIN if self.current_player == BLACK else GAME_BLACK_WIN
+        elif not self.opponent_has_piece():
+            return GAME_WHITE_WIN if self.current_player == WHITE else GAME_BLACK_WIN
+        elif self.is_drawn():
+            return GAME_DRAW
+        else:
+            return GAME_CONTINUE
+
+    def opponent_has_piece(self):
+        cnt = 0
+        for pos, piece in self.current_board.pieces.items():
+            if piece.player != self.current_player:
+                cnt += 1
+        return cnt >= 1
 
     def is_over(self):
+        return (not self.has_available_moves()) or self.is_drawn()
+
+    def has_available_moves(self):
         has_available_moves = False
         for pos, piece in self.current_board.pieces.items():
             if piece.player != self.current_player:
@@ -84,13 +133,7 @@ class Game():
             if len(king_jumps_tmp) + len(jumps_tmp) + len(normals_tmp) >= 1:
                 has_available_moves = True
                 break
-
-        if not has_available_moves:
-            return GAME_WHITE_WIN if self.current_player == BLACK else GAME_BLACK_WIN
-        elif self.is_drawn():
-            return GAME_DRAW
-        else:
-            return GAME_CONTINUE
+        return has_available_moves
 
     def is_drawn(self):
         '''
@@ -117,8 +160,7 @@ class Game():
 
         if self.is_chain_taking:
             # last move's pos_to
-            last_move = self.chain_taking_moves[-1]
-            king_jumps, jump_moves, normal_moves = self.current_board.get_available_moves(last_move.pos[-1])
+            king_jumps, jump_moves, normal_moves = self.current_board.get_available_moves(self.chain_taking_piece_pos)
             king_jumps = self.remove_jump_over_twice_moves(king_jumps)
 
         else:
@@ -178,6 +220,8 @@ class Game():
     def to_fen(self):
         current_player = "W" if self.current_player == WHITE else "B"
         is_chain_taking = self.is_chain_taking
+        chain_taking_piece_pos = to_readable_pos(self.chain_taking_piece_pos) \
+                                    if self.chain_taking_piece_pos is not None else None
         chain_taking_pos = to_readable_pos_list(self.chain_taking_pos)
         whites_pos, blacks_pos, whites_isking, blacks_isking = [], [], [], []
         sorted_items = sorted(self.current_board.pieces.items(), key=lambda item:item[0])
@@ -191,15 +235,16 @@ class Game():
         whites_pos = to_readable_pos_list(whites_pos)
         blacks_pos = to_readable_pos_list(blacks_pos)
         return game_to_fen(current_player, whites_pos, blacks_pos, whites_isking, 
-            blacks_isking, is_chain_taking, chain_taking_pos)
+            blacks_isking, is_chain_taking, chain_taking_piece_pos, chain_taking_pos)
 
     @classmethod
     def load_fen(cls, fen):
         current_player, whites_pos, blacks_pos, whites_isking, \
-                blacks_isking, is_chain_taking, chain_taking_pos = parse_fen(fen)
+                blacks_isking, is_chain_taking, chain_taking_piece_pos, chain_taking_pos = parse_fen(fen)
         game = Game()
         game.current_player = WHITE if current_player.lower() == "w" else BLACK
         game.is_chain_taking = is_chain_taking
+        game.chain_taking_piece_pos = read_input_pos(chain_taking_piece_pos)
         game.chain_taking_pos = norm_pos_list(chain_taking_pos)
         whites_pos = norm_pos_list(whites_pos)
         blacks_pos = norm_pos_list(blacks_pos)

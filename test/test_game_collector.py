@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-15 23:02:07
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-12 17:14:18
+LastEditTime: 2021-10-18 21:15:35
 Description: 
 '''
 
@@ -66,8 +66,7 @@ def test_load_selfplay(filepath):
     
     # datas = [datas[2]]
     for winner, game, states, mcts_probs, policy_grad in datas:
-        print(winner)
-        # print(states)
+        print("winner", winner)
         print(mcts_probs)
         print(policy_grad)
 
@@ -89,13 +88,13 @@ if __name__ == "__main__":
     dir_file = "./savedata/"
     # torch.multiprocessing.set_start_method("spawn")
 
-    # total_time = 0
-    # for i in range(3):
-    #     # total_time += test_pure_mcts_selfplay(8, 20)
-    #     total_time += test_alphazero_selfplay(8, 20)
-    # print(total_time, total_time/3)
+    total_time = 0
+    for i in range(3):
+        total_time += test_pure_mcts_selfplay(8, 20)
+        # total_time += test_alphazero_selfplay(8, 20)
+    print(total_time, total_time/3)
 
     # test_pure_mcts_selfplay(1, 1)
-    test_alphazero_selfplay(8, 20)
-    # test_load_selfplay(dir_file+"alphazero_selfplay_20211012_1705.pkl")
+    # test_alphazero_selfplay(8, 20)
+    # test_load_selfplay(dir_file+"pure_mcts_selfplay_20211018_2100.pkl")
     # test_eval()
