@@ -2,12 +2,13 @@
 Author: Zeng Siwei
 Date: 2021-09-11 16:26:31
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-09 19:32:19
+LastEditTime: 2021-10-21 00:15:18
 Description: 
 '''
 
 from .env_utils import action2id, actions2vec, state2vec, pos2coord, coord2pos
-from .env_utils import get_env_args, game_is_over, game_is_drawn, game_winner, game_status_to_str
+from .env_utils import get_env_args, enable_endgame_database, disable_endgame_database
+from .env_utils import game_is_over, game_is_drawn, game_winner, game_status_to_str
 from .env_utils import HUMAN_PLAYER, AI_PLAYER, WHITE, BLACK 
 from .env_utils import GUI_EXIT, GUI_WAIT, GUI_LEFTCLICK, GUI_RIGHTCLICK
 from .env_utils import GAME_CONTINUE, GAME_WHITE_WIN, GAME_BLACK_WIN, GAME_DRAW

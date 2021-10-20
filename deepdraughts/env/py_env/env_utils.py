@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:31:25
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-19 19:26:41
+LastEditTime: 2021-10-21 00:57:32
 Description: 
 '''
 
@@ -36,43 +36,6 @@ RUSSIAN_RULE = 2
 BRAZILIAN_RULE = 3
 MEN_MOVE = 4
 KING_MOVE = 5
-
-# Current states
-CURRENT_RULE = None
-CURRENT_BORAD = None
-
-def set_rule(rule = CONST_STR_RUSSIAN):
-    if rule not in (CONST_STR_RUSSIAN):
-        raise Exception("Rule must be russian.")
-    global CURRENT_RULE
-    CURRENT_RULE = rule
-
-def set_board(boardsize = CONST_N_GRID_64):
-    if boardsize not in (CONST_N_GRID_64, CONST_N_GRID_100, CONST_N_GRID_144):
-        raise Exception("Board size must be 8x8, 10x10 or 12x12.")
-    global CURRENT_BORAD
-    CURRENT_BORAD = boardsize
-
-set_rule()
-set_board()
-
-print("rule", CURRENT_RULE)
-print("board", CURRENT_BORAD)
-
-def get_env_args():
-    '''
-    Returns: 
-        nsize: board is nsize x nsize.
-        ngrids: #grids of board
-        n_actions: #number of actions
-        
-    '''    
-    if CURRENT_BORAD == CONST_N_GRID_64:
-        return CONST_N_SIZE_8, CONST_N_GRID_64, N_STATE_64, N_ACTION_64
-    elif CURRENT_BORAD == CONST_N_GRID_100:
-        return CONST_N_SIZE_10, CONST_N_GRID_100, N_STATE_100, N_ACTION_100
-    else:
-        raise Exception("Board size error!")
 
 # Game State code
 GAME_CONTINUE = 10
@@ -167,33 +130,33 @@ EDGE_POS_64 = set([8, 24, 40, 56, 7, 23, 39, 55])
 EDGE_POS_100 = set([])
 
 def KING_PROMOTION_POS():
-    if CURRENT_BORAD == CONST_N_GRID_64:
+    if current_borad == CONST_N_GRID_64:
         return KING_POS_WHITE_64, KING_POS_BLACK_64
-    elif CURRENT_BORAD == CONST_N_GRID_100:
+    elif current_borad == CONST_N_GRID_100:
         return KING_POS_WHITE_100, KING_POS_BLACK_100
     else:
         raise Exception("Board size error!")
 
 def VALID_POS():
-    if CURRENT_BORAD == CONST_N_GRID_64:
+    if current_borad == CONST_N_GRID_64:
         return VALID_POS_64
-    elif CURRENT_BORAD == CONST_N_GRID_100:
+    elif current_borad == CONST_N_GRID_100:
         return VALID_POS_100
     else:
         raise Exception("Board size error!")
 
 def DEFAULT_POS():
-    if CURRENT_BORAD == CONST_N_GRID_64:
+    if current_borad == CONST_N_GRID_64:
         return DEFAULT_POS_WHITE_64, DEFAULT_POS_BLACK_64
-    elif CURRENT_BORAD == CONST_N_GRID_100:
+    elif current_borad == CONST_N_GRID_100:
         return DEFAULT_POS_WHITE_100, DEFAULT_POS_BLACK_100
     else:
         raise Exception("Board size error!")
 
 def EDGE_POS():
-    if CURRENT_BORAD == CONST_N_GRID_64:
+    if current_borad == CONST_N_GRID_64:
         return EDGE_POS_64
-    elif CURRENT_BORAD == CONST_N_GRID_100:
+    elif current_borad == CONST_N_GRID_100:
         return EDGE_POS_100
     else:
         raise Exception("Board size error!")
@@ -347,7 +310,7 @@ def norm_pos_list(iter):
     return [read_input_pos(x) for x in iter]
 
 def to_readable_pos(pos):
-    if CURRENT_BORAD == CONST_N_GRID_64:
+    if current_borad == CONST_N_GRID_64:
         return computer_id_to_chess_str(pos)
     else:
         return computer_id_to_human_id(pos)
@@ -415,11 +378,77 @@ def state2vec(state):
 
 '''
 
-    Endgame database
+    global var
 		
 '''
 
-with open("one_versus_two.pkl", "rb") as fp:
-    ENDGAMES = pickle.load(fp)
+# Current states
+current_rule = None
+current_borad = None
+
+def set_rule(rule = CONST_STR_RUSSIAN):
+    if rule not in (CONST_STR_RUSSIAN):
+        raise Exception("Rule must be russian.")
+    global current_rule
+    current_rule = rule
+
+def set_board(boardsize = CONST_N_GRID_64):
+    if boardsize not in (CONST_N_GRID_64, CONST_N_GRID_100, CONST_N_GRID_144):
+        raise Exception("Board size must be 8x8, 10x10 or 12x12.")
+    global current_borad
+    current_borad = boardsize
+
+
+set_rule()
+set_board()
+
+print("rule", current_rule)
+print("board", current_borad)
+
+def get_env_args():
+    '''
+    Returns: 
+        nsize: board is nsize x nsize.
+        ngrids: #grids of board
+        n_actions: #number of actions
+        
+    '''    
+    if current_borad == CONST_N_GRID_64:
+        return CONST_N_SIZE_8, CONST_N_GRID_64, N_STATE_64, N_ACTION_64
+    elif current_borad == CONST_N_GRID_100:
+        return CONST_N_SIZE_10, CONST_N_GRID_100, N_STATE_100, N_ACTION_100
+    else:
+        raise Exception("Board size error!")
+
+use_endgame_database = True
+
+def is_using_endgame_database():
+    return use_endgame_database
+
+def enable_endgame_database():
+    global use_endgame_database
+    use_endgame_database = True
+
+def disable_endgame_database():
+    global use_endgame_database
+    use_endgame_database = False
+
 K_ENDGAME_PIECE = 4
-USE_ENDGAME_DATABASE = False
+
+from multiprocessing import Manager, Lock
+endgame_database = Manager().dict()
+endgame_lock = Lock()
+def get_endgame_database():
+    global endgame_lock
+    global endgame_database
+
+    if len(endgame_database) == 0:
+        endgame_lock.acquire()
+        if len(endgame_database) == 0:
+            with open("two_versus_two.pkl", "rb") as fp:
+                tmp_dict = pickle.load(fp)
+            endgame_database.update(tmp_dict)
+        endgame_lock.release()
+    return endgame_database
+
+

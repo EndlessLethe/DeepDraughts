@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 16:20:41
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-19 21:18:51
+LastEditTime: 2021-10-20 23:51:04
 Description: 
 '''
 
@@ -12,11 +12,11 @@ from .io_utils import parse_fen, game_to_fen
 import pickle
 
 class Game():
-    def __init__(self, player1_name = "player1", player2_name = "player2", ngrid = CONST_N_GRID_64, rule = RUSSIAN_RULE, auto_init = True) -> None:
+    def __init__(self, player1_name = "player1", player2_name = "player2", ngrid = CONST_N_GRID_64, rule = RUSSIAN_RULE, init_board = True) -> None:
         # necessary part to describe a game
         self.current_player = WHITE
         self.current_board = Board(ngrid, rule)
-        if auto_init:
+        if init_board:
             self.current_board.init_default_board()
         self.is_chain_taking = False
         self.chain_taking_piece_pos = None
@@ -94,16 +94,21 @@ class Game():
             winner = game_winner(game_status)
 
         '''
-        if USE_ENDGAME_DATABASE and self.current_board.number_of_pieces() <= K_ENDGAME_PIECE:
+        if is_using_endgame_database() and (not self.is_chain_taking) and self.current_board.number_of_pieces() <= K_ENDGAME_PIECE:
+            endgame_database = get_endgame_database()
             fen = self.to_fen()
-            if fen in ENDGAMES:
-                status, n_moves = ENDGAMES[fen]
+            if fen in endgame_database:
+                status, n_moves = endgame_database[fen]
                 if status == CONST_TOKEN_DRAW:
                     return GAME_DRAW
                 elif status == CONST_TOKEN_WIN:
                     return GAME_WHITE_WIN
                 elif status == CONST_TOKEN_LOSE:
                     return GAME_BLACK_WIN
+            else:
+                print(fen, "not in endgame database.")
+                import time
+                time.sleep(1)
 
         if not self.has_available_moves():
             return GAME_WHITE_WIN if self.current_player == BLACK else GAME_BLACK_WIN
@@ -241,7 +246,7 @@ class Game():
     def load_fen(cls, fen):
         current_player, whites_pos, blacks_pos, whites_isking, \
                 blacks_isking, is_chain_taking, chain_taking_piece_pos, chain_taking_pos = parse_fen(fen)
-        game = Game()
+        game = Game(init_board = False)
         game.current_player = WHITE if current_player.lower() == "w" else BLACK
         game.is_chain_taking = is_chain_taking
         game.chain_taking_piece_pos = read_input_pos(chain_taking_piece_pos)

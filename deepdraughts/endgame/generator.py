@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-10-13 10:49:16
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-19 19:31:41
+LastEditTime: 2021-10-20 12:54:56
 Description: 
 '''
 
@@ -305,8 +305,8 @@ def generate_one_versus_two():
 
 
 def generate_two_versus_two():
-    with open("one_versus_two.pkl", "rb") as fp:
-    # with open("two_versus_two.pkl", "rb") as fp:
+    # with open("one_versus_two.pkl", "rb") as fp:
+    with open("two_versus_two.pkl", "rb") as fp:
         endgame_dict = pickle.load(fp)
     
     generated_endgames = queue.Queue()
@@ -328,6 +328,66 @@ def generate_two_versus_two():
     with open("two_versus_two.pkl", "wb") as wfp:
         pickle.dump(endgame_dict, wfp, -1)
     return endgame_dict
+
+def generate_four_piece():
+    with open("two_versus_two.pkl", "rb") as fp:
+    # with open("four_piece.pkl", "rb") as fp:
+        endgame_dict = pickle.load(fp)
+    
+    generated_endgames = queue.Queue()
+    whites_pos, blacks_pos, whites_isking, blacks_isking = [], [], [], []
+    generate_next_piece(None, 1, 3, 0, 0,
+        whites_pos, blacks_pos, whites_isking, blacks_isking, generated_endgames)
+    generate_next_piece(None, 3, 1, 0, 0,
+        whites_pos, blacks_pos, whites_isking, blacks_isking, generated_endgames)
+    
+    waiting_endgames = queue.Queue()
+    while not generated_endgames.empty():
+        fen = generated_endgames.get()
+        game = Game.load_fen(fen)
+        # check whether is valid
+        if is_valid_waiting_endgame(game, fen, endgame_dict):
+            waiting_endgames.put(fen)
+            update(waiting_endgames, endgame_dict)
+
+            tokenize_drawn_endgames(waiting_endgames, endgame_dict, 6)
+
+    with open("four_piece.pkl", "wb") as wfp:
+        pickle.dump(endgame_dict, wfp, -1)
+    return endgame_dict
+
+def generate_five_piece():
+    with open("four_piece.pkl", "rb") as fp:
+    # with open("four_piece.pkl", "rb") as fp:
+        endgame_dict = pickle.load(fp)
+    
+    generated_endgames = queue.Queue()
+    whites_pos, blacks_pos, whites_isking, blacks_isking = [], [], [], []
+    generate_next_piece(None, 2, 3, 0, 0,
+        whites_pos, blacks_pos, whites_isking, blacks_isking, generated_endgames)
+    generate_next_piece(None, 3, 2, 0, 0,
+        whites_pos, blacks_pos, whites_isking, blacks_isking, generated_endgames)
+    generate_next_piece(None, 1, 4, 0, 0,
+        whites_pos, blacks_pos, whites_isking, blacks_isking, generated_endgames)
+    generate_next_piece(None, 4, 1, 0, 0,
+        whites_pos, blacks_pos, whites_isking, blacks_isking, generated_endgames)
+    
+    waiting_endgames = queue.Queue()
+    while not generated_endgames.empty():
+        fen = generated_endgames.get()
+        game = Game.load_fen(fen)
+        # check whether is valid
+        if is_valid_waiting_endgame(game, fen, endgame_dict):
+            waiting_endgames.put(fen)
+            update(waiting_endgames, endgame_dict)
+
+            tokenize_drawn_endgames(waiting_endgames, endgame_dict, 7)
+
+    with open("four_piece.pkl", "wb") as wfp:
+        pickle.dump(endgame_dict, wfp, -1)
+    return endgame_dict
+
+
 
 '''
 

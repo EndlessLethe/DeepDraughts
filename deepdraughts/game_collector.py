@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-15 16:32:59
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-14 00:14:41
+LastEditTime: 2021-10-21 00:10:41
 Description: 
 '''
 
@@ -90,10 +90,22 @@ class GameCollector():
     @classmethod
     def parallel_eval(cls, current_policy, shared_model, eval_policy, n_cores, n_games, 
                     temp = 1e-3, game_args=dict()):
-        import torch
-        from torch.multiprocessing import Pool
-        shared_model.share_memory()
-        with torch.no_grad():
+        if shared_model is not None:
+            import torch
+            from torch.multiprocessing import Pool
+            shared_model.share_memory()
+            with torch.no_grad():
+                with Pool(n_cores) as pool:
+                    pool_results = []
+                    
+                    for i in range(n_games):
+                        result = pool.apply_async(cls.eval, (current_policy, eval_policy, i, temp, game_args))
+                        pool_results.append(result)
+                    pool.close() 
+                    pool.join()
+                    results = [x.get() for x in pool_results]
+        else:
+            from multiprocessing import Pool
             with Pool(n_cores) as pool:
                 pool_results = []
                 
@@ -124,11 +136,23 @@ class GameCollector():
     
     @classmethod
     def parallel_collect_selfplay(cls, n_cores, shared_model, policy, batch_size = 1000, temp = 1e-3, filepath = None, game = None):
-        import torch
-        from torch.multiprocessing import Pool
+        
         if shared_model is not None:
+            import torch
+            from torch.multiprocessing import Pool
             shared_model.share_memory()
-        with torch.no_grad():
+            with torch.no_grad():
+                with Pool(n_cores) as pool:
+                    pool_results = []
+                    
+                    for i in range(batch_size):
+                        result = pool.apply_async(cls.self_play, (policy, temp))
+                        pool_results.append(result)
+                    pool.close() 
+                    pool.join()
+                    selfplay_data = [x.get() for x in pool_results]
+        else:
+            from multiprocessing import Pool
             with Pool(n_cores) as pool:
                 pool_results = []
                 
@@ -138,6 +162,7 @@ class GameCollector():
                 pool.close() 
                 pool.join()
                 selfplay_data = [x.get() for x in pool_results]
+
 
         if filepath:
             cls.dump_selfplay(selfplay_data, filepath)

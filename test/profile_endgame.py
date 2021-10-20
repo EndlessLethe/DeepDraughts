@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-10-19 19:24:17
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-19 20:51:11
+LastEditTime: 2021-10-20 12:55:54
 Description: 
 '''
 
@@ -16,12 +16,14 @@ if __name__ == "__main__":
 
     # profile function
     # generate_two_kings_versus_one_king()
-    generate_two_versus_two()
+    # generate_two_versus_two()
+    # generate_four_piece()
+    generate_five_piece()
 
     pr.disable()
 
     dir_file = "./savedata/"
-    filename = "endgame_profile_2v2"
+    filename = "endgame_profile_5piece"
     now_time = datetime.datetime.now().strftime("%Y%m%d_%H%M")
     filepath = dir_file + filename + "_" + now_time +".prof"
     pr.dump_stats(filepath)

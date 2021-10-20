@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-10-14 12:35:49
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-19 19:23:49
+LastEditTime: 2021-10-20 00:00:10
 Description: 
 '''
 
@@ -218,6 +218,22 @@ def test_generate_two_versus_two():
         basic_dict = pickle.load(fp)
 
     endgame_dict = generate_two_versus_two()
+
+    print(len(endgame_dict))
+
+    for key, item in endgame_dict.items():
+        if key in basic_dict:
+            continue
+        print(key, item)
+        gui = GUI()
+        gui.game = Game.load_fen(key)
+        gui.run()
+
+def test_generate_four_piece():
+    with open("two_versus_two.pkl", "rb") as fp:
+        basic_dict = pickle.load(fp)
+
+    endgame_dict = generate_four_piece()
 
     print(len(endgame_dict))
 
