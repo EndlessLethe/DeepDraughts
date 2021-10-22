@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 16:20:41
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-20 23:51:04
+LastEditTime: 2021-10-21 12:17:15
 Description: 
 '''
 
@@ -106,6 +106,7 @@ class Game():
                 elif status == CONST_TOKEN_LOSE:
                     return GAME_BLACK_WIN
             else:
+                # pass
                 print(fen, "not in endgame database.")
                 import time
                 time.sleep(1)

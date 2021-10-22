@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-10-19 23:40:13
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-19 23:43:24
+LastEditTime: 2021-10-21 16:00:05
 Description: 
 '''
 
@@ -31,7 +31,8 @@ def test_parse_fen():
     print(parse_fen(FEN_7))
 
 def test_load_fen():
-    fen = "B:WD6:BB8,F8."
+    # fen = "B:WD6:BB8,F8."
+    fen = "W:WKG7:BH6,KD2."
     print(fen)
     gui = GUI()
     gui.game = Game.load_fen(fen)

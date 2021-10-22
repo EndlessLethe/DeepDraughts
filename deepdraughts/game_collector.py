@@ -2,10 +2,11 @@
 Author: Zeng Siwei
 Date: 2021-09-15 16:32:59
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-21 00:10:41
+LastEditTime: 2021-10-21 11:28:43
 Description: 
 '''
 
+from deepdraughts.env.py_env.env_utils import enable_endgame_database, get_endgame_database, set_endgame_database
 from .env import Game, game_status_to_str, game_is_drawn, game_is_over, game_winner
 import numpy as np
 import pickle
@@ -14,15 +15,16 @@ import time
 
 class GameCollector():
     @classmethod
-    def self_play(cls, policy, temp=1e-3, game=None):
+    def self_play(cls, policy, temp=1e-3, game_args=dict(), shared_database=None):
         """ start a self-play game using a MCTS player, reuse the search tree,
         and store the self-play data: (winner, game, states, mcts_probs, policy_grad) for training
         """
         np.random.seed()
+        if shared_database is not None:
+            enable_endgame_database(shared_database)
         print("Start one game for self playing with random seed:", np.random.get_state()[1][:3])
         start_time = time.time()
-        if game is None:
-            game = Game()
+        game = Game(**game_args)
         states, mcts_probs, current_players = [], [], []
         while True:
             move, move_probs = policy.get_action(game, temp=temp)
@@ -53,12 +55,15 @@ class GameCollector():
         return winner, game, states, mcts_probs, policy_grad
 
     @classmethod
-    def eval(cls, current_policy, eval_policy, i, temp = 1e-3, game_args=dict()):
+    def eval(cls, current_policy, eval_policy, i, temp = 1e-3, 
+        game_args=dict(), shared_database = None):
         """
         Evaluate the trained policy by playing against the pure MCTS player
         Note: this is only for monitoring the progress of training
         """
         np.random.seed()
+        if shared_database is not None:
+            enable_endgame_database(shared_database)
         print("Start one game for evaluation with random seed:", np.random.get_state()[1][:3])
         start_time = time.time()
         cnt_win, cnt_lose, cnt_draw = 0, 0, 0
@@ -90,27 +95,31 @@ class GameCollector():
     @classmethod
     def parallel_eval(cls, current_policy, shared_model, eval_policy, n_cores, n_games, 
                     temp = 1e-3, game_args=dict()):
+        shared_database = get_endgame_database()
+
+        from multiprocessing import Pool
         if shared_model is not None:
             import torch
-            from torch.multiprocessing import Pool
             shared_model.share_memory()
             with torch.no_grad():
                 with Pool(n_cores) as pool:
                     pool_results = []
                     
                     for i in range(n_games):
-                        result = pool.apply_async(cls.eval, (current_policy, eval_policy, i, temp, game_args))
+                        result = pool.apply_async(cls.eval, (current_policy, eval_policy, 
+                                    i, temp, game_args, shared_database))
                         pool_results.append(result)
                     pool.close() 
                     pool.join()
                     results = [x.get() for x in pool_results]
         else:
-            from multiprocessing import Pool
+            
             with Pool(n_cores) as pool:
                 pool_results = []
                 
                 for i in range(n_games):
-                    result = pool.apply_async(cls.eval, (current_policy, eval_policy, i, temp, game_args))
+                    result = pool.apply_async(cls.eval, (current_policy, eval_policy, 
+                                i, temp, game_args, shared_database))
                     pool_results.append(result)
                 pool.close() 
                 pool.join()
@@ -135,29 +144,30 @@ class GameCollector():
         return selfplay_data
     
     @classmethod
-    def parallel_collect_selfplay(cls, n_cores, shared_model, policy, batch_size = 1000, temp = 1e-3, filepath = None, game = None):
+    def parallel_collect_selfplay(cls, n_cores, shared_model, policy, batch_size = 1000, 
+                                temp = 1e-3, game_args = dict(), filepath = None):
+        shared_database = get_endgame_database()
         
+        from multiprocessing import Pool
         if shared_model is not None:
             import torch
-            from torch.multiprocessing import Pool
             shared_model.share_memory()
             with torch.no_grad():
                 with Pool(n_cores) as pool:
                     pool_results = []
                     
                     for i in range(batch_size):
-                        result = pool.apply_async(cls.self_play, (policy, temp))
+                        result = pool.apply_async(cls.self_play, (policy, temp, game_args, shared_database))
                         pool_results.append(result)
                     pool.close() 
                     pool.join()
                     selfplay_data = [x.get() for x in pool_results]
         else:
-            from multiprocessing import Pool
             with Pool(n_cores) as pool:
                 pool_results = []
                 
                 for i in range(batch_size):
-                    result = pool.apply_async(cls.self_play, (policy, temp))
+                    result = pool.apply_async(cls.self_play, (policy, temp, game_args, shared_database))
                     pool_results.append(result)
                 pool.close() 
                 pool.join()

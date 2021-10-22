@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:31:25
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-21 00:57:32
+LastEditTime: 2021-10-22 11:16:36
 Description: 
 '''
 
@@ -420,35 +420,37 @@ def get_env_args():
     else:
         raise Exception("Board size error!")
 
-use_endgame_database = True
+K_ENDGAME_PIECE = 3
+endgame_database = None
+use_endgame_database = False
 
 def is_using_endgame_database():
     return use_endgame_database
 
-def enable_endgame_database():
+def init_endgame_database(manager):
+    database = manager.dict()
+    with open("3p.pkl", "rb") as fp:
+        tmp_dict = pickle.load(fp)
+        database.update(tmp_dict)
+    enable_endgame_database(database)
+
+def enable_endgame_database(database):
     global use_endgame_database
+
     use_endgame_database = True
+    set_endgame_database(database)
 
 def disable_endgame_database():
     global use_endgame_database
-    use_endgame_database = False
-
-K_ENDGAME_PIECE = 4
-
-from multiprocessing import Manager, Lock
-endgame_database = Manager().dict()
-endgame_lock = Lock()
-def get_endgame_database():
-    global endgame_lock
     global endgame_database
+    use_endgame_database = False
+    endgame_database = None
 
-    if len(endgame_database) == 0:
-        endgame_lock.acquire()
-        if len(endgame_database) == 0:
-            with open("two_versus_two.pkl", "rb") as fp:
-                tmp_dict = pickle.load(fp)
-            endgame_database.update(tmp_dict)
-        endgame_lock.release()
+def set_endgame_database(database):
+    global endgame_database
+    endgame_database = database
+
+def get_endgame_database():
     return endgame_database
 
 

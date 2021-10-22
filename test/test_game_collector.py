@@ -2,13 +2,14 @@
 Author: Zeng Siwei
 Date: 2021-09-15 23:02:07
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-21 00:57:01
+LastEditTime: 2021-10-21 11:28:17
 Description: 
 '''
 
 from logging import log
 
 from deepdraughts.env import *
+from deepdraughts.env.py_env.env_utils import enable_endgame_database
 from deepdraughts.gui import GUI
 from deepdraughts.game_collector import GameCollector
 from deepdraughts.mcts_pure import MCTSPlayer as MCTS_pure
@@ -87,6 +88,10 @@ def test_eval():
 if __name__ == "__main__": 
     dir_file = "./savedata/"
     # torch.multiprocessing.set_start_method("spawn")
+
+    import multiprocessing
+    manager = multiprocessing.Manager()
+    init_endgame_database(manager)
 
     total_time = 0
     for i in range(3):
