@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-15 16:32:59
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-21 11:28:43
+LastEditTime: 2021-10-25 21:07:46
 Description: 
 '''
 
@@ -38,7 +38,7 @@ class GameCollector():
             if is_over:
                 end_time = time.time()
                 print(game_status_to_str(game_status), 
-                    "Costing", end_time-start_time, "s")
+                    "Cosuming", end_time-start_time, "s")
                 break
 
         winner = game_winner(game_status)
@@ -79,7 +79,7 @@ class GameCollector():
             if is_over:
                 end_time = time.time()
                 print(game_status_to_str(game_status), 
-                    "Costing", end_time-start_time, "s")
+                    "Cosuming", end_time-start_time, "s")
                 break
         if game_is_drawn(game_status):
             cnt_draw += 1
@@ -97,12 +97,16 @@ class GameCollector():
                     temp = 1e-3, game_args=dict()):
         shared_database = get_endgame_database()
 
-        from multiprocessing import Pool
-        if shared_model is not None:
-            import torch
-            shared_model.share_memory()
-            with torch.no_grad():
-                with Pool(n_cores) as pool:
+        try:
+            from torch.multiprocessing import Pool
+        except ImportError:
+            from multiprocessing import Pool
+
+        with Pool(n_cores) as pool:
+            if shared_model is not None:
+                import torch
+                shared_model.share_memory()
+                with torch.no_grad():
                     pool_results = []
                     
                     for i in range(n_games):
@@ -112,9 +116,7 @@ class GameCollector():
                     pool.close() 
                     pool.join()
                     results = [x.get() for x in pool_results]
-        else:
-            
-            with Pool(n_cores) as pool:
+            else:
                 pool_results = []
                 
                 for i in range(n_games):
@@ -148,12 +150,16 @@ class GameCollector():
                                 temp = 1e-3, game_args = dict(), filepath = None):
         shared_database = get_endgame_database()
         
-        from multiprocessing import Pool
-        if shared_model is not None:
-            import torch
-            shared_model.share_memory()
-            with torch.no_grad():
-                with Pool(n_cores) as pool:
+        try:
+            from torch.multiprocessing import Pool
+        except ImportError:
+            from multiprocessing import Pool
+        
+        with Pool(n_cores) as pool:
+            if shared_model is not None:
+                import torch
+                shared_model.share_memory()
+                with torch.no_grad():
                     pool_results = []
                     
                     for i in range(batch_size):
@@ -162,8 +168,7 @@ class GameCollector():
                     pool.close() 
                     pool.join()
                     selfplay_data = [x.get() for x in pool_results]
-        else:
-            with Pool(n_cores) as pool:
+            else:
                 pool_results = []
                 
                 for i in range(batch_size):

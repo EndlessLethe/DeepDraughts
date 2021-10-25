@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-10-13 10:49:16
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-22 19:04:09
+LastEditTime: 2021-10-25 15:09:16
 Description: 
 '''
 
@@ -175,10 +175,18 @@ def generate_k_piece(k):
         pickle.dump(endgame_dict, wfp, -1)
     return endgame_dict
 
-def parallel_generate_k_piece(k, manager, n_cores = 4, n_fens = 1000):
-    from prwlock import RWLock
+def parallel_generate_k_piece(k, managers, n_cores = 4, n_fens = 1000):
+    # from prwlock import RWLock
     from multiprocessing import Pool
     
+    def split_chunks(n, lst):
+        return [lst[i:i+n] for i in range(0, len(lst), n)]
+
+    if k == 1:
+        saved_dict = dict()
+    else:
+        with open(str(k-1)+"p.pkl", "rb") as fp:
+            saved_dict = pickle.load(fp)
 
     generated_endgames = queue.Queue()
     whites_pos, blacks_pos, whites_isking, blacks_isking = [], [], [], []
@@ -188,42 +196,35 @@ def parallel_generate_k_piece(k, manager, n_cores = 4, n_fens = 1000):
             whites_pos, blacks_pos, whites_isking, blacks_isking, generated_endgames)
     print("Finish generation with", generated_endgames.qsize())
 
+    manager, endgame_lock_manager, game_lock_manager = managers
     endgame_dict, game_dict = manager.dict(), manager.dict()
-    endgame_lock_manager, game_lock_manager = RWLock(), RWLock()
-    
+    # endgame_rlock, endgame_wlock = endgame_lock_mananger.reader_lock, endgame_lock_mananger.writer_lock
+    # game_rlock, game_wlock = game_lock_mananger.reader_lock, game_lock_mananger.writer_lock
+    # endgame_rlock, endgame_wlock = manager.Lock(), manager.Lock()
+    # game_rlock, game_wlock = manager.Lock(), manager.Lock()
+    endgame_dict.update(saved_dict)
+
+    list_fen = []
     while not generated_endgames.empty():
-        list_batch = []
-        list_fen = []
-        while not generated_endgames.empty():
-            fen = generated_endgames.get()
-            
-            # check whether is valid
-            if is_valid_waiting_endgame(fen, endgame_dict):
-                list_fen.append(fen)
-            # if len(list_fen) >= n_fens:
-            #     list_batch.append(list_fen)
-            #     list_fen = []
-            # if len(list_batch) >= n_cores*2:
-            #     break
+        fen = generated_endgames.get()
         
-        if len(list_fen) >= 1:
-            list_batch.append(list_fen)
-        print(len(list_batch), len(list_batch[0]))
+        # check whether is valid
+        if is_valid_waiting_endgame(fen, endgame_dict):
+            list_fen.append(fen)
+    list_batch = split_chunks(n_fens, list_fen)
+    print(len(list_fen), len(list_batch))
 
-        # parallel_update(list_batch[0], endgame_dict, game_dict, endgame_lock_manager, 
-        #                     game_lock_manager, k-1)
-
-        with Pool(n_cores) as pool:
-            for list_fen in list_batch:
-                # pool.apply_async(parallel_update, 
-                #             (list_fen, endgame_dict, game_dict, endgame_lock_manager, 
-                #             game_lock_manager, k-1),
-                #             callback=call_back, error_callback=err_call_back)
-                pool.apply(parallel_update, 
-                            (list_fen, endgame_dict, game_dict, endgame_lock_manager, 
-                            game_lock_manager, k-1))
-            pool.close() 
-            pool.join()
+    with Pool(n_cores) as pool:
+        for list_fen in list_batch:
+            pool.apply_async(parallel_update, 
+                        (list_fen, endgame_dict, game_dict, endgame_lock_manager, 
+                        game_lock_manager, k-1))
+                        # callback=call_back, error_callback=err_call_back)
+            # pool.apply_async(parallel_update, 
+            #             (list_fen, endgame_dict, game_dict, endgame_rlock, endgame_wlock,
+            #             game_rlock, game_wlock, k-1))
+        pool.close() 
+        pool.join()
 
 
     print(len(endgame_dict))
@@ -325,6 +326,8 @@ def update(waiting_endgames, endgame_dict):
 def update_string(val, l):
     l.append(val)
 
+# def parallel_update(list_fen, endgame_dict, game_dict, endgame_read_lock, endgame_write_lock,
+#                         game_read_lock, game_write_lock, draw_token):
 def parallel_update(list_fen, endgame_dict, game_dict, endgame_lock_manager, 
                     game_lock_manager, draw_token):
     '''
@@ -332,123 +335,122 @@ def parallel_update(list_fen, endgame_dict, game_dict, endgame_lock_manager,
 
     '''    
     print("start parallel_update", len(list_fen))
-    endgame_dict.update(dict(("test", 1)))
     cnt_iter = 0
-    # waiting_endgames = queue.Queue()
-    # for fen in list_fen:
-        # waiting_endgames.put(fen)
-    # endgame_read_lock = endgame_lock_manager.reader_lock()
-    # endgame_write_lock = endgame_lock_manager.writer_lock()
-    # game_read_lock = game_lock_manager.reader_lock()
-    # game_write_lock = game_lock_manager.writer_lock()
+    waiting_endgames = queue.Queue()
+    for fen in list_fen:
+        waiting_endgames.put(fen)
+    endgame_read_lock = endgame_lock_manager.reader_lock
+    endgame_write_lock = endgame_lock_manager.writer_lock
+    game_read_lock = game_lock_manager.reader_lock
+    game_write_lock = game_lock_manager.writer_lock
     
 
-    # while waiting_endgames.qsize() >= 1:
-    #     cnt_iter += 1
-    #     any_updated = False
-    #     n_endgames_per_epoch = waiting_endgames.qsize()
-    #     print("Iter", cnt_iter, "with", n_endgames_per_epoch, "endgames")
+    while waiting_endgames.qsize() >= 1:
+        cnt_iter += 1
+        any_updated = False
+        n_endgames_per_epoch = waiting_endgames.qsize()
+        print("Iter", cnt_iter, "with", n_endgames_per_epoch, "endgames")
 
-    #     for i in range(n_endgames_per_epoch):
-    #         fen = waiting_endgames.get()
-    #         game = Game.load_fen(fen)
+        for i in range(n_endgames_per_epoch):
+            fen = waiting_endgames.get()
+            game = Game.load_fen(fen)
 
-    #         if fen not in endgame_dict:
-    #             with endgame_write_lock:
-    #                 if fen not in endgame_dict:
-    #                     game_status = game.query_game_status()
-    #                     update_dict_by_game_status(game_status, fen, endgame_dict)
-    #                     any_updated = True
+            if fen not in endgame_dict:
+                with endgame_write_lock:
+                    if fen not in endgame_dict:
+                        game_status = game.query_game_status()
+                        update_dict_by_game_status(game_status, fen, endgame_dict)
+                        any_updated = True
     
-    #         with endgame_read_lock:
-    #             if endgame_dict[fen][0] != CONST_TOKEN_UNKNOWN:
-    #                 continue
+            with endgame_read_lock:
+                if endgame_dict[fen][0] != CONST_TOKEN_UNKNOWN:
+                    continue
             
-    #         if fen not in game_dict:
-    #             with game_write_lock:
-    #                 if fen not in game_dict:
-    #                     tmp_list = []
-    #                     available_moves = game.get_all_available_moves()
-    #                     for move in available_moves:
-    #                         game_copy = pickle.loads(pickle.dumps(game, -1))
-    #                         game_status = game_copy.do_move(move)
-    #                         fen_copy = game_copy.to_fen()
-    #                         tmp_list.append((fen_copy, game_status))
-    #                     game_dict[fen] = tmp_list
+            if fen not in game_dict:
+                with game_write_lock:
+                    if fen not in game_dict:
+                        tmp_list = []
+                        available_moves = game.get_all_available_moves()
+                        for move in available_moves:
+                            game_copy = pickle.loads(pickle.dumps(game, -1))
+                            game_status = game_copy.do_move(move)
+                            fen_copy = game_copy.to_fen()
+                            tmp_list.append((fen_copy, game_status))
+                        game_dict[fen] = tmp_list
             
-    #         with game_read_lock:
-    #             available_endgames = game_dict[fen]
-    #         n_moves = len(available_endgames)
-    #         cnt = [0] * 4
-    #         min_moves = [INF] * 4
-    #         for fen_copy, game_status in available_endgames:
-    #             # print(fen_copy)
-    #             if fen_copy not in endgame_dict:
-    #                 with endgame_write_lock:
-    #                     if fen_copy not in endgame_dict:
-    #                         update_dict_by_game_status(game_status, fen_copy,endgame_dict)
-    #                         waiting_endgames.put(fen_copy)
-    #                         any_updated = True
+            with game_read_lock:
+                available_endgames = game_dict[fen]
+            n_moves = len(available_endgames)
+            cnt = [0] * 4
+            min_moves = [INF] * 4
+            for fen_copy, game_status in available_endgames:
+                # print(fen_copy)
+                if fen_copy not in endgame_dict:
+                    with endgame_write_lock:
+                        if fen_copy not in endgame_dict:
+                            update_dict_by_game_status(game_status, fen_copy,endgame_dict)
+                            waiting_endgames.put(fen_copy)
+                            any_updated = True
 
-    #             with endgame_read_lock:
-    #                 status, n_moves_to_win = endgame_dict[fen_copy]
-    #             cnt[DICT_CONST_RESULT[status]] += 1
-    #             min_moves[DICT_CONST_RESULT[status]] = min(min_moves[DICT_CONST_RESULT[status]], n_moves_to_win+1)
+                with endgame_read_lock:
+                    status, n_moves_to_win = endgame_dict[fen_copy]
+                cnt[DICT_CONST_RESULT[status]] += 1
+                min_moves[DICT_CONST_RESULT[status]] = min(min_moves[DICT_CONST_RESULT[status]], n_moves_to_win+1)
             
-    #         if game.current_player == WHITE:
-    #             if cnt[0] >= 1:
-    #                 with endgame_write_lock:
-    #                     endgame_dict[fen] = (CONST_TOKEN_WIN, min_moves[0])
-    #                     any_updated = True
-    #             elif cnt[1] == n_moves:
-    #                 with endgame_write_lock:
-    #                     endgame_dict[fen] = (CONST_TOKEN_LOSE, min_moves[1])
-    #                     any_updated = True
-    #             elif cnt[2] == n_moves:
-    #                 with endgame_write_lock:
-    #                     endgame_dict[fen] = (CONST_TOKEN_DRAW, min_moves[2])
-    #                     any_updated = True
-    #             elif cnt[1] + cnt[2] == n_moves:
-    #                 with endgame_write_lock:
-    #                     endgame_dict[fen] = (CONST_TOKEN_DRAW, min_moves[2])
-    #                     any_updated = True
-    #             else:
-    #                 waiting_endgames.put(fen)
-    #         else:
-    #             if cnt[0] == n_moves:
-    #                 with endgame_write_lock:
-    #                     endgame_dict[fen] = (CONST_TOKEN_WIN, min_moves[0])
-    #                     any_updated = True
-    #             elif cnt[1] >= 1:
-    #                 with endgame_write_lock:
-    #                     endgame_dict[fen] = (CONST_TOKEN_LOSE, min_moves[1])
-    #                     any_updated = True
-    #             elif cnt[2] == n_moves:
-    #                 with endgame_write_lock:
-    #                     endgame_dict[fen] = (CONST_TOKEN_DRAW, min_moves[2])
-    #                     any_updated = True
-    #             elif cnt[0] + cnt[2] == n_moves:
-    #                 with endgame_write_lock:
-    #                     endgame_dict[fen] = (CONST_TOKEN_DRAW, min_moves[2])
-    #                     any_updated = True
-    #             else:
-    #                 waiting_endgames.put(fen)
+            if game.current_player == WHITE:
+                if cnt[0] >= 1:
+                    with endgame_write_lock:
+                        endgame_dict[fen] = (CONST_TOKEN_WIN, min_moves[0])
+                        any_updated = True
+                elif cnt[1] == n_moves:
+                    with endgame_write_lock:
+                        endgame_dict[fen] = (CONST_TOKEN_LOSE, min_moves[1])
+                        any_updated = True
+                elif cnt[2] == n_moves:
+                    with endgame_write_lock:
+                        endgame_dict[fen] = (CONST_TOKEN_DRAW, min_moves[2])
+                        any_updated = True
+                elif cnt[1] + cnt[2] == n_moves:
+                    with endgame_write_lock:
+                        endgame_dict[fen] = (CONST_TOKEN_DRAW, min_moves[2])
+                        any_updated = True
+                else:
+                    waiting_endgames.put(fen)
+            else:
+                if cnt[0] == n_moves:
+                    with endgame_write_lock:
+                        endgame_dict[fen] = (CONST_TOKEN_WIN, min_moves[0])
+                        any_updated = True
+                elif cnt[1] >= 1:
+                    with endgame_write_lock:
+                        endgame_dict[fen] = (CONST_TOKEN_LOSE, min_moves[1])
+                        any_updated = True
+                elif cnt[2] == n_moves:
+                    with endgame_write_lock:
+                        endgame_dict[fen] = (CONST_TOKEN_DRAW, min_moves[2])
+                        any_updated = True
+                elif cnt[0] + cnt[2] == n_moves:
+                    with endgame_write_lock:
+                        endgame_dict[fen] = (CONST_TOKEN_DRAW, min_moves[2])
+                        any_updated = True
+                else:
+                    waiting_endgames.put(fen)
 
-    #     if not any_updated:
-    #         print("break")
-    #         break
+        if not any_updated:
+            print("break")
+            break
     
-    # with endgame_write_lock:
-    #     tokenize_drawn_endgames(waiting_endgames, endgame_dict, draw_token)
+    with endgame_write_lock:
+        tokenize_drawn_endgames(waiting_endgames, endgame_dict, draw_token)
     
-    # with game_write_lock:
-    #     with endgame_read_lock:
-    #         list_remove = []
-    #         for fen in game_dict.keys():
-    #             if fen in endgame_dict:
-    #                 if endgame_dict[fen][0] != CONST_TOKEN_UNKNOWN:
-    #                     list_remove.append(fen)
-    #         for fen in list_remove:
-    #             game_dict.pop(fen)
+    with game_write_lock:
+        with endgame_read_lock:
+            list_remove = []
+            for fen in game_dict.keys():
+                if fen in endgame_dict:
+                    if endgame_dict[fen][0] != CONST_TOKEN_UNKNOWN:
+                        list_remove.append(fen)
+            for fen in list_remove:
+                game_dict.pop(fen)
     
 

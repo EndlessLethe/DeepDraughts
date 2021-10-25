@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-17 13:36:24
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-11 15:48:14
+LastEditTime: 2021-10-25 19:45:19
 Description: 
 '''
 
@@ -82,9 +82,12 @@ if __name__ == "__main__":
     config = configparser.ConfigParser()
     config.read(conf_ini, encoding="utf-8")
 
-    run_human_play(config)
+    # run_human_play(config)
 
     # train your own model
-    # run_train_pipline(config)
+    import multiprocessing
+    manager = multiprocessing.Manager()
+    init_endgame_database(manager)
+    run_train_pipline(config)
 
     

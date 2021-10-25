@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-15 23:02:07
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-21 11:28:17
+LastEditTime: 2021-10-25 21:44:24
 Description: 
 '''
 
@@ -65,14 +65,15 @@ def test_load_selfplay(filepath):
     gc = GameCollector()
     datas = gc.load_selfplay(filepath)
     
-    # datas = [datas[2]]
-    for winner, game, states, mcts_probs, policy_grad in datas:
-        print("winner", winner)
-        print(mcts_probs)
-        print(policy_grad)
+    length = sum([len(x[1].move_path) for x in datas])
+    print("avg length", length / len(datas))
+    # for winner, game, states, mcts_probs, policy_grad in datas:
+    #     print("winner", winner)
+    #     print(mcts_probs)
+    #     print(policy_grad)
 
-        gui = GUI()
-        gui.replay(game)
+    #     gui = GUI()
+    #     gui.replay(game)
 
 def test_eval():
     dir_file = "./savedata/"

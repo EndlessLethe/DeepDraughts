@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:31:25
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-22 11:16:36
+LastEditTime: 2021-10-25 18:49:28
 Description: 
 '''
 
@@ -420,7 +420,7 @@ def get_env_args():
     else:
         raise Exception("Board size error!")
 
-K_ENDGAME_PIECE = 3
+K_ENDGAME_PIECE = 4
 endgame_database = None
 use_endgame_database = False
 
@@ -429,7 +429,7 @@ def is_using_endgame_database():
 
 def init_endgame_database(manager):
     database = manager.dict()
-    with open("3p.pkl", "rb") as fp:
+    with open(str(K_ENDGAME_PIECE)+"p.pkl", "rb") as fp:
         tmp_dict = pickle.load(fp)
         database.update(tmp_dict)
     enable_endgame_database(database)

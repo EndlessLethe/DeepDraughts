@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-10-14 12:35:49
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-22 12:28:13
+LastEditTime: 2021-10-25 18:14:25
 Description: 
 '''
 
@@ -156,6 +156,7 @@ def test_generate_two_piece():
     endgame_dict = generate_k_piece(2)
     end_time = time.time()
     print("Comsuming", end_time-start_time, "s")
+    
 
     print(len(basic_dict))
     print(len(endgame_dict))
@@ -199,17 +200,17 @@ def test_generate_three_piece():
 
 def test_generate_four_piece():
     start_time = time.time()
-    with open("3p.pkl", "rb") as fp:
-        basic_dict = pickle.load(fp)
+    # with open("3p.pkl", "rb") as fp:
+    #     basic_dict = pickle.load(fp)
 
-    endgame_dict = generate_four_piece()
+    endgame_dict = generate_k_piece(4)
     end_time = time.time()
     print("Comsuming", end_time-start_time, "s")
-    # Comsuming 10689.896116256714 s
+    # Comsuming 10119.538697481155 s
 
-    print(len(basic_dict))
+    # print(len(basic_dict))
     print(len(endgame_dict))
-    assert len(endgame_dict) == 14950636
+    # assert len(endgame_dict) == 13998502
 
     # for key, item in endgame_dict.items():
     #     if key in basic_dict:
@@ -224,11 +225,17 @@ def test_generate_four_piece():
 
 def test_parallel_generate_three_piece(manager):
     start_time = time.time()
-    endgame_dict = parallel_generate_k_piece(1, manager, 1)
+    endgame_dict = parallel_generate_k_piece(3, manager, 4)
     end_time = time.time()
     print("Comsuming", end_time-start_time, "s")
     print(len(endgame_dict))
-    # assert len(endgame_dict) == 470180
+    assert len(endgame_dict) == 470180
+
+    # with open("./deepdraughts/endgame/3p.pkl", "rb") as fp:
+    #     basic_dict = pickle.load(fp)
+    
+    # for key, value in endgame_dict.items():
+    #     if key in 
 
 
 # def test_generate_two_kings_versus_one_king():
@@ -308,12 +315,14 @@ if __name__ == "__main__":
     # test_generate_one_piece()
     # test_generate_two_piece()   
     # test_generate_three_piece()
-    # test_generate_four_piece()
+    test_generate_four_piece()
 
     ## test parallel
-    import multiprocessing
-    manager = multiprocessing.Manager()
-    test_parallel_generate_three_piece(manager)
+    # import multiprocessing
+    # from rwlock import RWLock
+    # manager = multiprocessing.Manager()
+    # endgame_lock_mananger, game_lock_mananger = RWLock(manager), RWLock(manager)
+    # test_parallel_generate_three_piece((manager, endgame_lock_mananger, game_lock_mananger))
     
 
     ## Dont use them any more.
