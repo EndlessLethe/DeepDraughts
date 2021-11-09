@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:36:26
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-14 12:41:13
+LastEditTime: 2021-11-09 19:16:08
 Description: 
 '''
 
@@ -64,7 +64,7 @@ class Board():
         is_ok = True
         for pos in pos_list:
             if pos not in VALID_POS():
-                x, y = pos2coord(pos, self.ngrid)
+                x, y = pos2coord(pos, self.nsize)
                 print("Invalid pos:", pos, "row:", x, "col:", y)
                 is_ok = False
         return is_ok

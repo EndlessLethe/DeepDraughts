@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 14:31:25
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-25 18:49:28
+LastEditTime: 2021-11-09 17:29:19
 Description: 
 '''
 
@@ -428,8 +428,24 @@ def is_using_endgame_database():
     return use_endgame_database
 
 def init_endgame_database(manager):
-    database = manager.dict()
-    with open(str(K_ENDGAME_PIECE)+"p.pkl", "rb") as fp:
+    def get_abspath(filepath):
+        import inspect, os
+        file = inspect.stack()[1][1]
+        path = os.path.dirname(os.path.abspath(file))
+        abspath = os.path.join(path, os.path.normpath(filepath))
+        return abspath
+
+    if manager is None:
+        database = dict()
+    else:
+        database = manager.dict()
+
+    ## dir structure: 
+    ## top -> deepdraughts -> env -> py_env
+    ## top -> resources
+
+    filepath = get_abspath("../../../resources/endgame") + str(K_ENDGAME_PIECE)+"p.pkl"
+    with open(filepath, "rb") as fp:
         tmp_dict = pickle.load(fp)
         database.update(tmp_dict)
     enable_endgame_database(database)

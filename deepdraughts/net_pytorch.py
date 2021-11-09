@@ -263,8 +263,9 @@ class Model():
         checkpoint_n_epoch = model_params['n_epoch']
         use_gpu = model_params['use_gpu']
         l2_const = model_params['l2_const']
+        env_args = (nsize, None, n_states, n_actions)
 
-        model = Model(nsize, n_states, n_actions, name, use_gpu, l2_const)
+        model = Model(env_args, name, use_gpu, l2_const)
         model.checkpoint_n_epoch = checkpoint_n_epoch
         model.policy_value_net.load_state_dict(model_params['model'])
         model.optimizer.load_state_dict(model_params['optimizer'])

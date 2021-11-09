@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-11 16:20:41
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-25 18:50:49
+LastEditTime: 2021-11-08 11:03:57
 Description: 
 '''
 
@@ -111,10 +111,10 @@ class Game():
                 import time
                 time.sleep(1)
 
-        if not self.has_available_moves():
-            return GAME_WHITE_WIN if self.current_player == BLACK else GAME_BLACK_WIN
-        elif not self.opponent_has_piece():
+        if not self.opponent_has_piece():
             return GAME_WHITE_WIN if self.current_player == WHITE else GAME_BLACK_WIN
+        elif not self.has_available_moves():
+            return GAME_WHITE_WIN if self.current_player == BLACK else GAME_BLACK_WIN
         elif self.is_drawn():
             return GAME_DRAW
         else:
@@ -146,9 +146,7 @@ class Game():
         Here I just implement the only one basic rules about drawn:
         - If both players play 15 kingmoves (any king) without captures or moving men, the game is drawn.
         '''        
-        if self.n_king_move >= 30:
-            return True
-        return False
+        return self.n_king_move >= 30
 
     def remove_jump_over_twice_moves(self, king_jumps):
         chain_taking_pos = set(self.chain_taking_pos)

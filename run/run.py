@@ -2,7 +2,7 @@
 Author: Zeng Siwei
 Date: 2021-09-17 13:36:24
 LastEditors: Zeng Siwei
-LastEditTime: 2021-10-25 19:45:19
+LastEditTime: 2021-11-09 17:37:56
 Description: 
 '''
 
@@ -11,13 +11,17 @@ from deepdraughts.mcts_pure import MCTSPlayer as MCTS_pure
 from deepdraughts.gui import GUI
 from deepdraughts.mcts_alphazero import MCTSPlayer_alphazero as MCTS_alphazero
 from deepdraughts.net_pytorch import Model
-from deepdraughts.train_pipline import TrainPipeline
 import configparser
 
 def run_human_play(config):
-    play_with = config.get("running_args", "play_with")
-    play_using_white = config.getboolean("running_args", "play_using_white")
-    n_playout = config.getint("running_args", "n_playout")
+    play_with = config.get("playing_args", "play_with")
+    play_using_white = config.getboolean("playing_args", "play_using_white")
+    n_playout = config.getint("playing_args", "n_playout")
+    using_endgame_database = config.getboolean("playing_args", "using_endgame_database")
+    if using_endgame_database:
+        print("Using endgmae database")
+        init_endgame_database(None)
+
     if play_with == "human":
         play_with_human()
     elif play_with == "alphazero":
@@ -29,23 +33,6 @@ def run_human_play(config):
     else:
         play_with_pureMCTS(play_using_white, n_playout)
 
-
-def run_train_pipline(config):
-    save_dir = "./savedata/"
-
-    checkpoint = config.get("model_args", "checkpoint")
-    name = config.get("model_args", "name")
-    use_gpu = config.getboolean("model_args", "use_gpu")
-    l2_const = config.getfloat("model_args", "l2_const")
-
-    if not checkpoint:
-        env_args = get_env_args()
-        model = Model(env_args, name = name, use_gpu = use_gpu, l2_const = l2_const)
-    else:
-        model = Model.load(checkpoint)
-
-    training_pipeline = TrainPipeline(model, save_dir, config)
-    training_pipeline.run()
 
 def play_with_human():
     gui = GUI()
@@ -82,12 +69,6 @@ if __name__ == "__main__":
     config = configparser.ConfigParser()
     config.read(conf_ini, encoding="utf-8")
 
-    # run_human_play(config)
-
-    # train your own model
-    import multiprocessing
-    manager = multiprocessing.Manager()
-    init_endgame_database(manager)
-    run_train_pipline(config)
+    run_human_play(config)
 
     
